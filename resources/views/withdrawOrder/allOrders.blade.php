@@ -71,14 +71,24 @@
                                                 $n = 1;
                                                 @endphp
                                                 @foreach($orders as $list)
+                                                @php
+                                                $checkOrder = DB::table('product_movements')->where('orderNo','=', $list->orderNo)->count();
+                                                $checkrejected = DB::table('product_movements')->where('orderNo','=', $list->orderNo)->where('isconfirmed','=', 2)->count();
+                                                @endphp
                                                     <tr>
                                                         <td scope="row">{{$n++}}</td>
                                                         <td>{{$list->orderNo}} </td>
-                                                        <td>{{$list->description}} </td>
+                                                        <td>{{$list->description}}  
+                                                        @if($checkrejected > 0)
+                                                        (<span class="blink">One or more items in this order rejected</span>)
+                                                        @elseif($checkOrder == $checkrejected)
+                                                        (<span class="blink">This order was rejected</span>)
+                                                        @endif
+                                                        </td>
                                                         <td>{{$list->location}} </td>
                                                         <td>{{$list->store_name}} </td>
                                                         
-                                                        <td><a href="{{url('/view/orders-items/'.$list->orderNo)}}" class="btn btn-outline-success btn-sm edit" ><i class="fa fa-eye"></i></a>
+                                                        <td><a href="{{url('/view/orders-items/'.$list->orderNo)}}" class="btn btn-outline-success btn-sm" ><i class="fa fa-eye"></i></a>
                                                                                                                  </td>
                                                     </tr>
                                                 @endforeach
@@ -130,8 +140,40 @@
 
 @endsection
 
+@section('style')
+
+<style type="text/css">
+.blink
+{
+
+color:red;
+font-size: 16px;
+}
+
+
+</style>
+
+
+@endsection
+
 @section('script')
 <script>
+
+$(document).ready(function()
+{
+    $('.blink').each(function() {
+    var elem = $(this);
+    setInterval(function() {
+        if (elem.css('visibility') == 'hidden') {
+            elem.css('visibility', 'visible');
+        } else {
+            elem.css('visibility', 'hidden');
+        }    
+    }, 2000);
+});
+
+});
+
     $(document).ready(function(){
   
     $("table tr td .edit").click(function(){
@@ -152,7 +194,7 @@
 
 <script>
     $(document).ready(function(){
-  
+       
     $("table tr td .del").click(function(){
        
        $('#user').val($(this).attr('userID'));

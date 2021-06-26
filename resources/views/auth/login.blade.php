@@ -41,11 +41,11 @@
                             
                             
                             <button type="submit" class="btn_1 full_width text-center">Log in</button>
-                            <p>Need an account? 
+                            <!--<p>Need an account? 
                                 @if (Route::has('register'))
                                 <a data-toggle="modal" data-target="#sing_up" data-dismiss="modal"  href="{{ route('register') }}"> {{ __('Create Your Account') }}</a>
                                 @endif
-                            </p>
+                            </p>-->
                             
 
                             @if (Route::has('password.request'))

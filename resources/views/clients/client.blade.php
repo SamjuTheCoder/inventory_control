@@ -58,7 +58,6 @@
 
                         </div>
                         
-                       
                         <button type="submit" class="btn btn-primary">Create</button>
                     </form>
                 </div>
@@ -67,7 +66,6 @@
                 <div class="table-responsive">
                   <table class="table table-bordered">
                       <thead>
-                      
                           <tr>
                               <th scope="col">#</th>
                               <th scope="col">Client</th>

@@ -52,21 +52,21 @@ class ProductMeasurementUnitController extends Controller
         //DB transactions
         try{
             if(MeasurementUnitModel::find($recordID) && $recordID)
-            { 
+            {
                 $saved = MeasurementUnitModel::where('id', $recordID)->update(
-                    [
-                        'productID'     => $request['product'],
-                        'measurementID' => $request['measurementName'],
-                        'quantity'      => $request['quantity']
-                    ]);
+                [
+                    'productID'     => $request['product'],
+                    'measurementID' => $request['measurementName'],
+                    'quantity'      => $request['quantity']
+                ]);
             }else{
                 $saved = MeasurementUnitModel::create(
-                    [
-                        'productID'     => $request['product'],
-                        'measurementID' => $request['measurementName'],
-                        'quantity'      => $request['quantity']
-                    ]);
-            } 
+                [
+                    'productID'     => $request['product'],
+                    'measurementID' => $request['measurementName'],
+                    'quantity'      => $request['quantity']
+                ]);
+            }
             if($saved)
             {
                 Session::forget('editRecord');
@@ -150,3 +150,4 @@ class ProductMeasurementUnitController extends Controller
 
 
 }//end class
+

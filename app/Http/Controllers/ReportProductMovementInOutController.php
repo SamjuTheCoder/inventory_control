@@ -78,14 +78,17 @@ class ReportProductMovementInOutController extends Controller
     //Query Record
     public function queryData($storeID = null, $productID = null, $categoryID = null, $date = null)
     {   
-        $getDate = date('Y-m-d', strtotime($date));
+        $getDate = ($date ? date('Y-m-d', strtotime($date)) : date('Y-m-d'));
         $storeID = $storeID == 'All' ? null : $storeID;
         $productID = $productID == 'All' ? null : $productID;
         $categoryID = $categoryID == 'All' ? null : $categoryID;
-        if($storeID == null && $productID == null && $categoryID == null && $date <> null)
-        {
-            $record = ProductMovement::leftjoin('products', 'products.id', '=', 'product_movements.productID')
-                ->where('product_movements.transactionDate', '<', $getDate)
+
+        $record = ProductMovement::leftjoin('products', 'products.id', '=', 'product_movements.productID')
+                ->where('products.categoryID',($categoryID?'=':'<>'), $categoryID)
+                ->where('product_movements.productID',($productID?'=':'<>'), $productID)
+                ->where('product_movements.storeID',($storeID?'=':'<>'), $storeID)
+                ->where('product_movements.transactionDate', '<=', $getDate)
+                ->where('product_movements.status', 1)
                 ->leftjoin('categories', 'categories.id', '=', 'products.categoryID')
                 ->leftjoin('stores', 'stores.id', '=', 'product_movements.storeID')
                 ->leftjoin('projects', 'projects.id', '=', 'product_movements.projectID')
@@ -93,137 +96,13 @@ class ReportProductMovementInOutController extends Controller
                 ->orderBy('product_movements.id', 'Desc')
                 ->groupBy('product_movements.productID')
                 ->get();
-        }elseif($storeID <> null && $productID == null && $categoryID == null && $date == null)
-        {
-            $record = ProductMovement::leftjoin('products', 'products.id', '=', 'product_movements.productID')
-                ->where('product_movements.storeID', $storeID)
-                ->leftjoin('categories', 'categories.id', '=', 'products.categoryID')
-                ->leftjoin('stores', 'stores.id', '=', 'product_movements.storeID')
-                ->leftjoin('projects', 'projects.id', '=', 'product_movements.projectID')
-                ->select('*', DB::raw("SUM(move_in) as totalIn"), DB::raw("SUM(move_out) as totalOut"), 'product_movements.storeID as productStoreID', 'product_movements.description as productDescription', 'product_movements.quantity as productQuantity', 'product_movements.id as recordID', 'product_movements.updated_at as dateUpdated')
-                ->orderBy('product_movements.id', 'Desc')
-                ->groupBy('product_movements.productID')
-                ->get();
-        }elseif($storeID == null && $productID <> null && $categoryID == null && $date == null)
-        {
-            $record = ProductMovement::leftjoin('products', 'products.id', '=', 'product_movements.productID')
-                ->where('product_movements.productID', $productID)
-                ->leftjoin('categories', 'categories.id', '=', 'products.categoryID')
-                ->leftjoin('stores', 'stores.id', '=', 'product_movements.storeID')
-                ->leftjoin('projects', 'projects.id', '=', 'product_movements.projectID')
-                ->select('*', DB::raw("SUM(move_in) as totalIn"), DB::raw("SUM(move_out) as totalOut"), 'product_movements.storeID as productStoreID', 'product_movements.description as productDescription', 'product_movements.quantity as productQuantity', 'product_movements.id as recordID', 'product_movements.updated_at as dateUpdated')
-                ->orderBy('product_movements.id', 'Desc')
-                ->groupBy('product_movements.productID')
-                ->get();
-        }elseif($storeID == null && $productID == null && $categoryID <> null && $date == null)
-        {
-            $record = ProductMovement::leftjoin('products', 'products.id', '=', 'product_movements.productID')
-                ->where('products.categoryID', $categoryID)
-                ->leftjoin('categories', 'categories.id', '=', 'products.categoryID')
-                ->leftjoin('stores', 'stores.id', '=', 'product_movements.storeID')
-                ->leftjoin('projects', 'projects.id', '=', 'product_movements.projectID')
-                ->select('*', DB::raw("SUM(move_in) as totalIn"), DB::raw("SUM(move_out) as totalOut"), 'product_movements.storeID as productStoreID', 'product_movements.description as productDescription', 'product_movements.quantity as productQuantity', 'product_movements.id as recordID', 'product_movements.updated_at as dateUpdated')
-                ->orderBy('product_movements.id', 'Desc')
-                ->groupBy('product_movements.productID')
-                ->get();
-        }elseif($storeID <> null && $productID <> null && $categoryID == null && $date == null)
-        {
-            $record = ProductMovement::leftjoin('products', 'products.id', '=', 'product_movements.productID')
-                ->where('product_movements.storeID', $storeID)
-                ->where('product_movements.productID', $productID)
-                ->leftjoin('categories', 'categories.id', '=', 'products.categoryID')
-                ->leftjoin('stores', 'stores.id', '=', 'product_movements.storeID')
-                ->leftjoin('projects', 'projects.id', '=', 'product_movements.projectID')
-                ->select('*', DB::raw("SUM(move_in) as totalIn"), DB::raw("SUM(move_out) as totalOut"), 'product_movements.storeID as productStoreID', 'product_movements.description as productDescription', 'product_movements.quantity as productQuantity', 'product_movements.id as recordID', 'product_movements.updated_at as dateUpdated')
-                ->orderBy('product_movements.id', 'Desc')
-                ->groupBy('product_movements.productID')
-                ->get();
-        }elseif($storeID <> null && $productID <> null && $categoryID == null && $date <> null)
-        {
-            $record = ProductMovement::leftjoin('products', 'products.id', '=', 'product_movements.productID')
-                ->where('product_movements.storeID', $storeID)
-                ->where('product_movements.productID', $productID)
-                ->where('product_movements.transactionDate', $date)
-                ->leftjoin('categories', 'categories.id', '=', 'products.categoryID')
-                ->leftjoin('stores', 'stores.id', '=', 'product_movements.storeID')
-                ->leftjoin('projects', 'projects.id', '=', 'product_movements.projectID')
-                ->select('*', DB::raw("SUM(move_in) as totalIn"), DB::raw("SUM(move_out) as totalOut"), 'product_movements.storeID as productStoreID', 'product_movements.description as productDescription', 'product_movements.quantity as productQuantity', 'product_movements.id as recordID', 'product_movements.updated_at as dateUpdated')
-                ->orderBy('product_movements.id', 'Desc')
-                ->groupBy('product_movements.productID')
-                ->get();
-        }elseif($storeID <> null && $productID == null && $categoryID == null && $date <> null)
-        {
-            $record = ProductMovement::leftjoin('products', 'products.id', '=', 'product_movements.productID')
-                ->where('product_movements.storeID', $storeID)
-                ->where('product_movements.transactionDate', $date)
-                ->leftjoin('categories', 'categories.id', '=', 'products.categoryID')
-                ->leftjoin('stores', 'stores.id', '=', 'product_movements.storeID')
-                ->leftjoin('projects', 'projects.id', '=', 'product_movements.projectID')
-                ->select('*', DB::raw("SUM(move_in) as totalIn"), DB::raw("SUM(move_out) as totalOut"), 'product_movements.storeID as productStoreID', 'product_movements.description as productDescription', 'product_movements.quantity as productQuantity', 'product_movements.id as recordID', 'product_movements.updated_at as dateUpdated')
-                ->orderBy('product_movements.id', 'Desc')
-                ->groupBy('product_movements.productID')
-                ->get();
-        }elseif($storeID == null && $productID <> null && $categoryID == null && $date <> null)
-        {
-            $record = ProductMovement::leftjoin('products', 'products.id', '=', 'product_movements.productID')
-                ->where('product_movements.productID', $productID)
-                ->where('product_movements.transactionDate', $date)
-                ->leftjoin('categories', 'categories.id', '=', 'products.categoryID')
-                ->leftjoin('stores', 'stores.id', '=', 'product_movements.storeID')
-                ->leftjoin('projects', 'projects.id', '=', 'product_movements.projectID')
-                ->select('*', DB::raw("SUM(move_in) as totalIn"), DB::raw("SUM(move_out) as totalOut"), 'product_movements.storeID as productStoreID', 'product_movements.description as productDescription', 'product_movements.quantity as productQuantity', 'product_movements.id as recordID', 'product_movements.updated_at as dateUpdated')
-                ->orderBy('product_movements.id', 'Desc')
-                ->groupBy('product_movements.productID')
-                ->get();
-        }elseif($storeID <> null && $productID == null && $categoryID <> null && $date == null)
-        {
-            $record = ProductMovement::leftjoin('products', 'products.id', '=', 'product_movements.productID')
-                ->where('product_movements.storeID', $storeID)
-                ->where('products.categoryID', $categoryID)
-                ->leftjoin('categories', 'categories.id', '=', 'products.categoryID')
-                ->leftjoin('stores', 'stores.id', '=', 'product_movements.storeID')
-                ->leftjoin('projects', 'projects.id', '=', 'product_movements.projectID')
-                ->select('*', DB::raw("SUM(move_in) as totalIn"), DB::raw("SUM(move_out) as totalOut"), 'product_movements.storeID as productStoreID', 'product_movements.description as productDescription', 'product_movements.quantity as productQuantity', 'product_movements.id as recordID', 'product_movements.updated_at as dateUpdated')
-                ->orderBy('product_movements.id', 'Desc')
-                ->groupBy('product_movements.productID')
-                ->get();
-        }elseif($storeID <> null && $productID == null && $categoryID <> null && $date <> null)
-        {
-            $record = ProductMovement::leftjoin('products', 'products.id', '=', 'product_movements.productID')
-                ->where('product_movements.storeID', $storeID)
-                ->where('products.categoryID', $categoryID)
-                ->where('product_movements.transactionDate', $date)
-                ->leftjoin('categories', 'categories.id', '=', 'products.categoryID')
-                ->leftjoin('stores', 'stores.id', '=', 'product_movements.storeID')
-                ->leftjoin('projects', 'projects.id', '=', 'product_movements.projectID')
-                ->select('*', DB::raw("SUM(move_in) as totalIn"), DB::raw("SUM(move_out) as totalOut"), 'product_movements.storeID as productStoreID', 'product_movements.description as productDescription', 'product_movements.quantity as productQuantity', 'product_movements.id as recordID', 'product_movements.updated_at as dateUpdated')
-                ->orderBy('product_movements.id', 'Desc')
-                ->groupBy('product_movements.productID')
-                ->get();
-        }elseif($storeID == null && $productID == null && $categoryID <> null && $date <> null)
-        {
-            $record = ProductMovement::leftjoin('products', 'products.id', '=', 'product_movements.productID')
-                ->where('products.categoryID', $categoryID)
-                ->where('product_movements.transactionDate', $date)
-                ->leftjoin('categories', 'categories.id', '=', 'products.categoryID')
-                ->leftjoin('stores', 'stores.id', '=', 'product_movements.storeID')
-                ->leftjoin('projects', 'projects.id', '=', 'product_movements.projectID')
-                ->select('*', DB::raw("SUM(move_in) as totalIn"), DB::raw("SUM(move_out) as totalOut"), 'product_movements.storeID as productStoreID', 'product_movements.description as productDescription', 'product_movements.quantity as productQuantity', 'product_movements.id as recordID', 'product_movements.updated_at as dateUpdated')
-                ->orderBy('product_movements.id', 'Desc')
-                ->groupBy('product_movements.productID')
-                ->get();
-        }else{
-            $record = ProductMovement::leftjoin('products', 'products.id', '=', 'product_movements.productID')
-                ->leftjoin('categories', 'categories.id', '=', 'products.categoryID')
-                ->leftjoin('stores', 'stores.id', '=', 'product_movements.storeID')
-                ->leftjoin('projects', 'projects.id', '=', 'product_movements.projectID')
-                ->select('*', DB::raw("SUM(move_in) as totalIn"), DB::raw("SUM(move_out) as totalOut"), 'product_movements.storeID as productStoreID', 'product_movements.description as productDescription', 'product_movements.quantity as productQuantity', 'product_movements.id as recordID', 'product_movements.updated_at as dateUpdated')
-                ->orderBy('product_movements.id', 'Desc')
-                ->groupBy('product_movements.productID')
-                ->get();
+        
+        foreach($record as $xyz) {
+            $xyz->formatqty=$this->FormatQTY($xyz->productID, ($xyz->totalIn - $xyz->totalOut) );
         }
         
         return $record;
+       
     }
 
 
@@ -241,6 +120,14 @@ class ReportProductMovementInOutController extends Controller
         return $myStore;
     }
 
+
+    //Get product from category
+    public function getProductFromCategory($categoryID = null)
+    {
+        $categoryID = ($categoryID == 'All' ? $categoryID = null : $categoryID);
+        $data = Product::where('categoryID', ($categoryID ? '=' : '<>'), $categoryID)->select('id', 'productName')->get();
+        return $data;
+    }
 
 
 }//end class

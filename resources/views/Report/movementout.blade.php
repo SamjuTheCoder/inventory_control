@@ -9,7 +9,7 @@ Movement-Out Report
             <div class="white_card_header">
                 <div class="box_header m-0">
                     <div class="main-title">
-                        <h3 class="m-0">Movement-Out Report <span style="font-size:12px;">Fields marked<i style="color:red">*</i> are important</span></h3>
+                        <h3 class="m-0">Movement-Out Report </h3>
                     </div>
                 </div>
                 @if(session('success'))
@@ -40,8 +40,8 @@ Movement-Out Report
                     @csrf
                         <div class="form-row">
                            
-                            <div class="form-group col-md-4">
-                                <label for="inputPassword4">Store:<i style="color:red">*</i></label>
+                            <div class="form-group col-md-2">
+                                <label for="inputPassword4">Store:<i style="color:red"></i></label>
                                 <select id="clientName" class="form-control" name="store">
                                     <option value="">Choose...</option>
                                     @foreach($store as $st)
@@ -50,8 +50,8 @@ Movement-Out Report
                                 </select>
                             </div>
 
-                            <div class="form-group col-md-4">
-                                <label for="inputPassword4">Project:<i style="color:red">*</i></label>
+                            <div class="form-group col-md-2">
+                                <label for="inputPassword4">Project:<i style="color:red"></i></label>
                                 <select id="" class="form-control" name="project">
                                     <option value="">Choose...</option>
                                     @foreach($project as $pt)
@@ -62,7 +62,7 @@ Movement-Out Report
                             </div>
 
                             <div class="form-group col-md-4">
-                                <label for="inputPassword4">Product:<i style="color:red">*</i></label>
+                                <label for="inputPassword4">Product:<i style="color:red"></i></label>
                                 <select id="select-state" class="form-control" name="product" >
                                     <option value="">Choose...</option>
                                     @foreach($product as $pd)
@@ -70,15 +70,14 @@ Movement-Out Report
                                     @endforeach
                                 </select>
                             </div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group col-md-6">
-                                <label for="inputPassword4">Date From:<i style="color:red">*</i></label>
-                                <input type="date" name="date_from" class="form-control" id="date_from" value="{{ $datefrom }}">
+                        
+                            <div class="form-group col-md-2">
+                                <label for="inputPassword4">Date from:<i style="color:red"></i></label>
+                                <input type="text" name="date_from" class="form-control" id="date_from" value="{{ $datefrom }}" placeholder="Select date to search from">
                             </div>   
-                            <div class="form-group col-md-6">
-                                <label for="inputPassword4">Date To:<i style="color:red">*</i></label>
-                                <input type="date" name="date_to" class="form-control" id="date_to" value="{{ $dateto }}">
+                            <div class="form-group col-md-2">
+                                <label for="inputPassword4">Date to:<i style="color:red"></i></label>
+                                <input type="text" name="date_to" class="form-control" id="date_to" value="{{ $dateto }}" placeholder="Select date to search to"> 
                             </div>
                         </div>
                         
@@ -99,7 +98,7 @@ Movement-Out Report
                               <th scope="col">Action</th>
                           </tr>
                       </thead>
-                      @if($details==null)
+                      @if($details==null)  
 
                       @else
                         <tbody>
@@ -108,7 +107,7 @@ Movement-Out Report
                             <tr>
                                 <th scope="row">{{ $i++ }}</th>
                                 <td>{{ $detail->productName }}</td>
-                                <td>{{ $sum }}</td>
+                                <td>{{ $detail->sum }} [ <span style="color:green">{{ $detail->formatqty }} </span>]</td>
                                 <td> <a href="report/viewall/{{ base64_encode($detail->pid) }}" target="_blank" data-toggle="tooltip" data-placement="bootom" title="View All"><button class="btn btn-outline-success"><i class="fa fa-eye"></i></button></a> </td>
                             </tr>
                         @endforeach
@@ -122,7 +121,31 @@ Movement-Out Report
     </div>
 </div>
 @endsection
+
+
+@section('style')
+  <link href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.1/themes/base/jquery-ui.css" rel="stylesheet" />
+@endsection
+
+
 @section('script')
+<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.1/jquery-ui.min.js"></script>
+<script>
+
+   $(document).ready(function () {
+        $('input[id$=date_from]').datepicker({
+            dateFormat: 'dd-mm-yy'			// Date Format "dd-mm-yy"
+        });
+  });
+  
+  $(document).ready(function () {
+        $('input[id$=date_to]').datepicker({
+            dateFormat: 'dd-mm-yy'			// Date Format "dd-mm-yy"
+        });
+  });
+  
+</script>
 <script>
 $(document).ready(function(){
     $([data-toggle="tooltip"]).tooltip();

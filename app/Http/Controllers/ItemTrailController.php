@@ -45,9 +45,11 @@ class ItemTrailController extends Controller
 
         $data['opening'] = $this->FormatQTY($data['product'], $this->Opening($data['product'],$data['store'],date('Y-m-d', strtotime($data['fromdate']))));
         $data['TrailRecords'] = $this->TrailRecords($data['product'],$data['store'],date('Y-m-d', strtotime($data['fromdate'])),date('Y-m-d', strtotime($data['todate'])));
+        
         //$data['TrailRecords'] = $this->TrailRecords(1,$data['store'],'2021-01-01',$data['todate']);
         $data['getStore'] = DB::table('stores')->get();
         //dd($data['TrailRecords']);
+       
      return view('Report.stock_trails', $data);
          
     }

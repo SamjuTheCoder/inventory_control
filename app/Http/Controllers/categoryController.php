@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Support\Facades\Session;
 use Illuminate\Http\Request;
 use App\Models\Category;
+use App\Models\Product;
 use App\Models\SubCategory;
-use Session;
+use Illuminate\Pagination\Paginator;
+//use Session;
 use DB;
 use Auth;
 
@@ -25,18 +28,30 @@ class categoryController extends Controller
     public function create()
     {
         //dd('h');
-        $data['getCategory'] = category::all();
+        $data['getCategory'] = Category::all();
+        $data['SubCategory'] = SubCategory::all();
         $data['get_sub_Category'] = DB::table('sub_categories')->rightjoin('categories', 'categories.id', '=', 'sub_categories.categoryID')->get(); //SubCategory::all(); 
         $data['getSubCategory'] = DB::table('sub_categories')->leftjoin('categories', 'categories.id', '=', 'sub_categories.categoryID')
-                                    ->select('*', 'sub_categories.id as catID')
-                                    ->get();
-                                    //->paginate(50);
+                                    ->select('*', 'sub_categories.id as subcatID', 'categories.id as catID', 'categories.categoryTitle as categoryTitle')
+                                    ->orderby('categoryTitle')->orderby('subcategoryName')
+                                    //->simplePaginate(10);
+                                    //dd($data['getSubCategory']);
+                                    ->paginate(10);
         $data['getEditRecord'] =    Session::get('editCategorySession');
         $data['editSubCategory'] =  (Session::get('editSubCategorySession') ? Session::get('editSubCategorySession') : null);
         
         return view('categories.category', $data);
     }
 
+    public function forgetCategory (Request $request){
+        Session::forget('editCategorySession');
+        return redirect()->route('getCategory');
+    }
+
+    public function forgetSubCategory (Request $request){
+        Session::forget('editSubCategorySession');
+        return redirect()->route('getCategory');
+    }
     /**
      * Show the form for creating a new resource.
      *
@@ -50,24 +65,35 @@ class categoryController extends Controller
          //validation
          $this->validate($request,
          [
-            'category'    => ['required', 'string', 'max:190', 'unique:categories,categoryTitle']
+            'category'    => ['required', 'string', 'max:190', 'unique:categories,categoryTitle'],
+            
          ]);
+         $recordID = $request->get('recordID');
          //DB transactions
          //$saved = DB::table('categories')->insert([ 'categoryTitle' => $request->input('category')]);
-           // dd($saved);
-         try{
-           // $saved = DB::table('categories')->insert([ 'categoryTitle' => $request->input('category')])
-        
-             $saved = Category::create(['categoryTitle' => $request['category']]);
-             if($saved)
-             {
-                 return redirect()->route('saveCategory')->with('success', 'New Category was created.');
-             }
-         }catch(\Throwable $getError){
-             $this->storeTryCatchError($getError, 'categoryController@saveCategory', 'Error occurred when adding new record.' );
-         }
-         return redirect()->route('getCategory')->with('error_message', 'Sorry, we cannot create you record now. Please try again.');
-     }//end fun
+           // dd($recordID);
+        if($recordID == null){  
+            //try{
+                $saved = DB::table('categories')->insert([ 'categoryTitle' => $request->input('category')]);
+                // $saved = new Category;
+                // $saved = $Category->categoryTitle = $request->input('category');
+                //$saved = Category::create(['categoryTitle' => $request['category']]);
+                // if($saved == true)
+                // {
+                    return back()->with('success', 'New Category was created.');
+                //}
+            }//catch(\Throwable $getError){
+            //    $this->storeTryCatchError($getError, 'categoryController@saveCategory', 'Error occurred when adding new record.' );
+           // }
+        //}
+        else{
+            $saved = DB::table('categories')->where('id', $recordID)->update([ 'categoryTitle' => $request->input('category')]);
+            Session::forget('editCategorySession');
+            //dd($saved);
+            return redirect()->route('getCategory')->with('success', 'Category updated successfully.');
+        }
+         return back()->with('error_message', 'Sorry, we cannot create you record now. Please try again.');           
+    }//end fun
     
 
      public function editCategory( $recordID)
@@ -92,59 +118,22 @@ class categoryController extends Controller
      //Delete Record
      public function deleteCategory($recordID)
      {   
-        //DB transactions
-        try{
-            $getRecord      = Category::find($recordID);
-            $checkInUse     = Category::where('id', 'recordID')->first();
-            if($getRecord && !$checkInUse)
-            {
-                $getRecord->delete();
-                return redirect()->route('getCategory')->with('success', 'Your record was deleted.');
-            }
-        }catch(\Throwable $getError){
-            $this->storeTryCatchError($getError, 'categoryController@deleteCategory', 'Error occurred when deleting record.' );
+        //$getRecord      = Category::where('id', 'recordID')->first();
+        $checkInUse =   DB::table('sub_categories')->where('categoryID', $recordID)->first();
+        //dd($checkInUse);
+        if ($checkInUse == true  ){
+            //dd('computers');
+            return back()->with('error_message', 'record cannot be deleted because it is currently assigned to a Subcategory!');
+        }else{
+            //dd('Construction');
+            DB::table('Categories')->where('id', $recordID)->delete();
+            return back()->with('success', 'record has been deleted!');
         }
-        if($checkInUse)
-        {
-            return redirect()->route('getCategory')->with('error_message', 'Sorry, This record is in use. We cannot delete this record now.');
-        }
-        return redirect()->route('getCategory')->with('error_message', 'Sorry, we cannot delete this record now. Please try again.');
      }
      
-    //SUB CATEGORY FUNCTIONS BELOW
-     public function SaveSubCategory(Request $request )
-    {
-        // dd('here');
-          //Initialization
-          $saved = null;
-          //validation
-          $this->validate($request,
-          [
-             'category_id'   => ['required', 'integer'],
-             "subCategory"    => ['required', 'string', 'max:190', 'unique:sub_categories,subcategoryName']
-          ]);
-
-          $recordID = $request['recordID'];
-           //dd($recordID); 
-          //DB transactions      
-            try{
-                $saved = DB::table('sub_categories')->where('categoryID', 'categoryID')->insert(['subcategoryName' => $request['subCategory'], 'categoryID' => $request['category_id']]);
-                //$saved = SubCategory::create(['subcategoryName' => $request['subCategory'], 'categoryID' => $request['category_id']]);
-                //dd($saved);
-                if($saved)
-                {
-                    return redirect()->route('subCategory')->with('success', 'New Category was created.');
-                }
-            }catch(\Throwable $getError){
-                $this->storeTryCatchError($getError, 'categoryController@SaveSubCategory', 'Error occurred when adding new record.' );
-            }
-            return redirect()->route('getCategoryInd')->with('error_message', 'Sorry, we cannot create you record now. Please try again.');
-    }
-        //end fun
-      
-      public function editSubCategory($recordID)
-      {   
-         
+    
+    public function editSubCategory($recordID)
+    {            
           //dd('here');
           //DB transactions
           Session::forget('editSubCategorySession');
@@ -162,35 +151,26 @@ class categoryController extends Controller
               $this->storeTryCatchError($getError, 'categoryController@editSubCategory', 'Error occurred when editing record.' );
           }
           return redirect()->route('getCategory')->with('error_message', 'Sorry, we cannot edit this record now. Please try again.');
-      }//end func
-
-  
+    }//end func
  
-     public function deleteSubCategory($recordID)
-     {   
-         //dd('here');
+    public function deleteSubCategory($recordID)
+    {           
          //DB transactions
-         try{
-             $getRecord      = SubCategory::find($recordID);
-             //dd($getRecord);
-             $checkInUse     = SubCategory::where('id', 'recordID')->first();
-             if($getRecord && !$checkInUse)
-             {
-                $getRecord->delete();
-                return redirect()->route('getCategory')->with('success', 'Your record was deleted.');
-             }
-         }catch(\Throwable $getError){
-             $this->storeTryCatchError($getError, 'categoryController@deleteSubCategory', 'Error occurred when deleting record.' );
-         }
-         if($checkInUse)
-         {
-             return redirect()->route('getCategoryInd')->with('error_message', 'Sorry, This record is in use. We cannot delete this record now.');
-         }
-         return redirect()->route('getCategoryInd')->with('error_message', 'Sorry, we cannot delete this record now. Please try again.');
-     }//end func
+         $getRecord      = SubCategory::where('id', $recordID)->first();
+         $checkInUse     = Product::where('subcategoryID', $recordID)->first();
 
-     public function saveAndUpdate (Request $request) 
-     {
+         if($checkInUse == false){
+             //dd('delete');
+             DB::table('sub_categories')->where('id', $recordID)->delete();
+             return redirect()->route('getCategory')->with('success', 'record deleted successfully.');
+         }else{
+             //dd('dont delete');
+             return redirect()->route('getCategory')->with('error_message', "Sorry, This record it's in use. We cannot delete this record now.");
+         }//end func
+    }
+
+    public function SaveSubCategory (Request $request) 
+    {
          //dd('here');
         $this->validate($request,
         [
@@ -199,16 +179,19 @@ class categoryController extends Controller
         ]);
 
         $recordID = $request['recordID'];
-        dd($recordID);
+        //dd($recordID);
 
-        if ($recordID != null){
-            $insert = DB::table('sub_categories')->insert([ 'categoryTitle' => $request->input('subCategory'), 'categoryID' => $request->input('category_id')
+        if ($recordID == null){
+            $insert = DB::table('sub_categories')->insert([ 'subcategoryName' => $request->input('subCategory'), 'categoryID' => $request->input('category_id')
             ]);
-            return redirect()->route('getCategory')->with('success', 'Your record was created successfully.');
+            return redirect()->route('getCategoryInd')->with('success', 'Your record was created successfully.');
         }else{
-            $saved = DB::table('sub_categories')->where('categoryID', $recordID)->update([ 'categoryTitle' => $request->input('subCategory'), 'categoryID' => $request->input('category_id')
+            $saved = DB::table('sub_categories')->where('id', $recordID)->update([ 'subcategoryName' => $request->input('subCategory'), 'categoryID' => $request->input('category_id')
             ]);
-            return redirect()->route('getCategory')->with('success', 'Your record was updated successfully.');
+            Session::forget('editSubCategorySession');
+            return redirect()->route('getCategoryInd')->with('success', 'Your record was updated successfully.');
         }
-     }
+    }
 }
+
+

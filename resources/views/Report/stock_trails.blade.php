@@ -58,7 +58,7 @@
                                 </div>
                                 <div class="mb-2 col-md-2">
                                     <label for="transactionDate" class="form-label text-dark ">From <span class="text-danger" title="This most be filled."><b>*</b></span> </label>
-                                    <input type="text" id="getDate" required class="form-control dateFrom" name="fromdate" value="{{$fromdate  }}" placeholder="DD-MM-YY">
+                                    <input type="text" id="dateFrom" required class="form-control dateFrom" name="fromdate" value="{{$fromdate  }}" placeholder="DD-MM-YY">
                                     @error('transactionDate')
                                         <span class="invalid-feedback" role="alert">
                                             <strong>{{ $message }}</strong>
@@ -67,7 +67,7 @@
                                 </div>
                                 <div class="mb-2 col-md-2">
                                     <label for="transactionDate" class="form-label text-dark">To <span class="text-danger" title="This most be filled."><b>*</b></span> </label>
-                                    <input type="text" id="getDate" required class="form-control dateTo" name="todate" value="{{ $todate  }}" placeholder="DD-MM-YY">
+                                    <input type="text" id="dateTo" required class="form-control dateTo" name="todate" value="{{ $todate  }}" placeholder="DD-MM-YY">
                                     @error('transactionDate')
                                         <span class="invalid-feedback" role="alert">
                                             <strong>{{ $message }}</strong>
@@ -77,7 +77,7 @@
                             </div>
                             <div class="row mb-3">
                                 <div align="center" class="mb-3 col-md-12">                                   
-                                        <button type="submit" name="submit" class="btn btn-outline-success">Reload</button>  
+                                        <button type="submit" name="submit" class="btn btn-outline-success">Search</button>  
                                 </div>
                             </div>
 
@@ -119,7 +119,7 @@
                                     <td>{{$list->curQTY!=''?$list->curQTY:'-'}} </td>
                                     <td>{{$list->description}} </td>
                                     <td>{{$list->orderNo}} </td>
-                                    <td> <a onclick="ViewDetails('ref')" class="btn btn-success">View</a></td>
+                                    <td> <a href="{{url('/order-items/'.$list->orderNo)}}" class="btn btn-success">View</a></td>
                                 </tr>
     		                    @endforeach
                             </table>
@@ -139,7 +139,7 @@
 @section('style')
 <link rel="stylesheet" href="{{asset('assets/css/datepicker.min.css')}}"/>
 
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/selectize.js/0.12.6/css/selectize.bootstrap3.min.css" integrity="sha256-ze/OEYGcFbPRmvCnrSeKbRTtjG4vGLHXgOqsyLFTRjg=" crossorigin="anonymous" />
+   
 @endsection
 
 @section('script')
@@ -147,7 +147,7 @@
 
 <script>
 
-$(".dateFrom").datepicker({
+$("#dateFrom").datepicker({
     changeMonth: true,
     changeYear: true,
     yearRange: '1910:2090', // specifying a hard coded year range
@@ -157,11 +157,11 @@ $(".dateFrom").datepicker({
     onSelect: function(dateText, inst){
       var theDate = new Date(Date.parse($(this).datepicker('dateFrom')));
       var dateFormatted = $.datepicker.formatDate('dd-mm-yy', theDate);
-       $('.dateFrom').val($.datepicker.formatDate('dd-mm-yy', theDate));
+       $('#dateFrom').val($.datepicker.formatDate('dd-mm-yy', theDate));
     },
   });
 
-  $(".dateTo").datepicker({
+  $("#dateTo").datepicker({
     changeMonth: true,
     changeYear: true,
     yearRange: '1910:2090', // specifying a hard coded year range
@@ -171,34 +171,17 @@ $(".dateFrom").datepicker({
     onSelect: function(dateText, inst){
       var theDate = new Date(Date.parse($(this).datepicker('dateTo')));
       var dateFormatted = $.datepicker.formatDate('dd-mm-yy', theDate);
-       $('.dateTo').val($.datepicker.formatDate('dd-mm-yy', theDate));
+       $('#dateTo').val($.datepicker.formatDate('dd-mm-yy', theDate));
     },
   });
 
 </script>
 
 <script>
-    //date format
-     //$(document).ready(function () {
-       /* $("#getDate").datepicker({
-            changeMonth: true,
-            changeYear: true,
-            yearRange: '1910:2090', // specifying a hard coded year range
-            showOtherMonths: false,
-            selectOtherMonths: false,
-            dateFormat: "dd-mm-yyyy",
-            onSelect: function(dateText, inst){
-                var options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-                //var theDate = new Date(Date.parse($(this).datepicker('getDate')));
-                var theDate = new Date(today.toLocaleDateString("en-NG", options));
-                var dateFormatted = $.datepicker.formatDate('dd-mm-yyyy', theDate);
-            },
-        });*/
-    //});
+    
 </script>
-    {{-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script> --}}
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/selectize.js/0.12.6/js/standalone/selectize.min.js" integrity="sha256-+C0A5Ilqmu4QcSPxrlGpaZxJ04VjsRjKu+G82kl5UJk=" crossorigin="anonymous"></script>
-
+    
+    
 <script>
     //select field with search
      $(document).ready(function () {
@@ -209,12 +192,6 @@ $(".dateFrom").datepicker({
           sortField: 'text'
         });
     });
+</script>
 
-    //Get Product Measurements
-    $(document).ready(function () {
-        $('#getProduct').change(function() {
-            var productID = $('#getProduct').val();
-            $.ajax({
-                url: '{{url("/")}}' +  '/get-product-measurement/' + productID,
-                type: 'get',
-                //data: {'classID': classID, '_token': 
+@endsection

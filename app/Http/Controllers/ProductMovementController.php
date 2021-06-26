@@ -56,11 +56,24 @@ class ProductMovementController extends Controller
         {
             $getMeasurement = MeasurementUnitModel::where('measurement_units.productID', $productID)
                             ->join('measurements', 'measurements.id', '=', 'measurement_units.measurementID')
-                            ->select('description', 'measurementID')
+                            ->select('measurement_units.id as id', 'description', 'measurementID', 'quantity')
                             ->get();
         }
         return $getMeasurement;
     }
+
+
+    //Get shelves when a store is selected
+    public function getShelfFromStore($storeID = null)
+    {
+        $getShelves = [];
+        if(Store::find($storeID))
+        {
+            $getShelves = Shelf::where('shelves.storeID', $storeID)->select('id', 'storeID', 'shelve_name')->get();
+        }
+        return $getShelves;
+    }
+
 
 
     //Get User Store
@@ -71,8 +84,8 @@ class ProductMovementController extends Controller
         if(StoreUser::where('userID', $userID))
         {
             $myStore = StoreUser::where('store_users.userID', $userID)
-                            ->join('stores', 'stores.id', '=', 'store_users.storeID')
-                            ->get();
+                    ->join('stores', 'stores.id', '=', 'store_users.storeID')
+                    ->get();
         }
         return $myStore;
     }
@@ -87,17 +100,21 @@ class ProductMovementController extends Controller
         $this->validate($request,
         [
             'store'             => ['required', 'numeric'],
-            //'shelf'             => ['required', 'numeric'],
-            'transactionDate'   => ['required', 'date'],
             'product'           => ['required', 'numeric'],
             'measure'           => ['required', 'numeric'],
-            'quantity'          => ['required', 'numeric'],
-            //'description'       => ['required', 'string'],
+            'quantity'          => ['required', 'numeric', 'min: 1'],
 
         ]);
         $recordID = $request['getRecord'];
         //DB transactions
         try{
+            //check if user selected difference stores
+            $getStore = ProductMovement::where('status', 0)->where('move_in_out_type', 1)->where('userID', (Auth::check() ? Auth::user()->id : null))->value('storeID');
+            if($getStore && ($request['store'] <> $getStore) )
+            {
+                return redirect()->back()->with('error', 'Sorry, you cannot select another store apart from the one you have started with. Complete this transaction to change your store.');
+            }
+
             $getProductLeast = MeasurementUnitModel::where('measurementID', $request['measure'])->where('productID', $request['product'])->value('quantity');
             if(ProductMovement::find($recordID))
             {
@@ -107,10 +124,11 @@ class ProductMovementController extends Controller
                         'storeID'           => $request['store'],
                         'productID'         => $request['product'],
                         'measurementID'     => $request['measure'],
-                        'transactionDate'   => date('Y-m-d', strtotime($request['transactionDate'])),
+                        //'transactionDate'   => date('Y-m-d', strtotime($request['transactionDate'])),
                         'move_in'           => (is_numeric($request['quantity']) ? ($getProductLeast * $request['quantity']) : 1),
                         'quantity'          => $request['quantity'],
                         'shelveID'          => $request['shelf'],
+                        'move_in_out_type'  => 1,
                     ]);
             }else{
                 $saved = ProductMovement::create(
@@ -119,21 +137,22 @@ class ProductMovementController extends Controller
                         'storeID'           => $request['store'],
                         'productID'         => $request['product'],
                         'measurementID'     => $request['measure'],
-                        'transactionDate'   => date('Y-m-d', strtotime($request['transactionDate'])),
+                        //'transactionDate'   => date('Y-m-d', strtotime($request['transactionDate'])),
                         'move_in'           => (is_numeric($request['quantity']) ? ($getProductLeast * $request['quantity']) : 1),
                         'quantity'          => $request['quantity'],
                         'shelveID'          => $request['shelf'],
+                        'move_in_out_type'  => 1,
                     ]);
             }
             if($saved)
             {
                 Session::forget('editRecord');
-                return redirect()->route('createProductMovement')->with('message', 'New product was created/updated successfully.');
+                return redirect()->route('createProductMovement')->withInput($request->all)->with('message', 'New product was created/updated successfully.');
             }
         }catch(\Throwable $getError){
             $this->storeTryCatchError($getError, 'ProductMovementController@storeProductMovement', 'Error occurred when adding/updating product.' );
         }
-        return redirect()->route('createProductMovement')->with('error', 'Sorry, we cannot create/update your record now. Please try again.');
+        return redirect()->route('createProductMovement')->withInput($request->all)->with('error', 'Sorry, we cannot create/update your record now. Please try again.');
     }//end fun
 
 
@@ -181,20 +200,24 @@ class ProductMovementController extends Controller
             {
                 return ProductMovement::where('product_movements.id', $recordID)
                     ->where('product_movements.status', 0)
+                    ->where('move_in_out_type', 1)
+                    ->where('product_movements.is_adjusted', 0)
                     ->leftjoin('products', 'products.id', '=', 'product_movements.productID')
                     ->leftjoin('measurements', 'measurements.id', '=', 'product_movements.measurementID')
                     ->leftjoin('stores', 'stores.id', '=', 'product_movements.storeID')
                     ->leftjoin('shelves', 'shelves.id', '=', 'product_movements.shelveID')
-                    ->select('*', 'product_movements.storeID as productStoreID', 'product_movements.description as productDescription', 'product_movements.quantity as productQuantity', 'measurements.id as measurementID', 'measurements.description as measureName', 'product_movements.id as recordID', 'product_movements.updated_at as dateUpdated')
+                    ->select('*', 'shelves.id as shelfID', 'product_movements.storeID as productStoreID', 'product_movements.description as productDescription', 'product_movements.quantity as productQuantity', 'measurements.id as measurementID', 'measurements.description as measureName', 'product_movements.id as recordID', 'product_movements.updated_at as dateUpdated')
                     ->orderBy('product_movements.id', 'Desc')
                     ->first();
             }else{
                 return ProductMovement::leftjoin('products', 'products.id', '=', 'product_movements.productID')
                     ->where('product_movements.status', 0)
+                    ->where('move_in_out_type', 1)
+                    ->where('product_movements.is_adjusted', 0)
                     ->leftjoin('measurements', 'measurements.id', '=', 'product_movements.measurementID')
                     ->leftjoin('stores', 'stores.id', '=', 'product_movements.storeID')
                     ->leftjoin('shelves', 'shelves.id', '=', 'product_movements.shelveID')
-                    ->select('*', 'product_movements.storeID as productStoreID', 'product_movements.description as productDescription', 'product_movements.quantity as productQuantity', 'measurements.id as measurementID', 'measurements.description as measureName', 'product_movements.id as recordID', 'product_movements.updated_at as dateUpdated')
+                    ->select('*', 'shelves.id as shelfID', 'product_movements.storeID as productStoreID', 'product_movements.description as productDescription', 'product_movements.quantity as productQuantity', 'measurements.id as measurementID', 'measurements.description as measureName', 'product_movements.id as recordID', 'product_movements.updated_at as dateUpdated')
                     ->orderBy('product_movements.id', 'Desc')
                     ->get();
             }
@@ -211,21 +234,23 @@ class ProductMovementController extends Controller
         $isSuccess = 0;
         $this->validate($request,
         [
+            'transactionDate'   => ['required', 'date'],
             'description'       => ['required', 'string'],
         ]);
         try{
             $randomDigit = rand(98979489, 8357373853);
-            $isSuccess = ProductMovement::where('status', 0)->update([
-                'status'        => 1,
-                'orderNo'       => $randomDigit,
-                'description'   => $request['description'],
+            $isSuccess = ProductMovement::where('status', 0)->where('move_in_out_type', 1)->where('is_adjusted', 0)->where('userID', (Auth::check() ? Auth::user()->id : null))->update([
+                'status'            => 1,
+                'orderNo'           => $randomDigit,
+                'transactionDate'   => date('Y-m-d', strtotime($request['transactionDate'])),
+                'description'       => $request['description'],
             ]);
         }catch(\Throwable $err){}
         if($isSuccess)
         {
-            return redirect()->back()->with('success', 'All unbatched items are now batched successfully as a single entry with the same order number: '. $randomDigit);
+            return redirect()->back()->with('success', 'All unbatched items were now batched successfully as a single entry with the same order number: '. $randomDigit);
         }else{
-            return redirect()->back()->with('warning', 'Sorry, we cannot batch you items now or no items to be batched. Please try again.');
+            return redirect()->back()->with('warning', 'Sorry, we cannot batch your items now or no items to be batched. Please try again.');
         }
     }
 

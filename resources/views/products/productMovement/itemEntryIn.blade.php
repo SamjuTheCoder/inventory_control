@@ -1,5 +1,5 @@
 @extends('layouts.app')
-@section('pageHeaderTitle', 'Item Entry')
+@section('pageHeaderTitle', 'Product Entry')
 
 @section('content')
 <div class="row justify-content-center">
@@ -31,9 +31,9 @@
                             <input type="hidden" name="getRecord" value="{{ (isset($editRecord) && $editRecord) ? $editRecord->recordID : old('getRecord') }}">
 
                             <div class="row mb-2">
-                                <div class="mb-3 col-md-5">
+                                <div class="mb-3 col-md-4">
                                     <label for="store" class="form-label text-dark">Store<span class="text-danger" title="This most be filled."><b>*</b></span> </label>
-                                    <select required class="form-control searchSelect" name="store">
+                                    <select required id="getStore" class="form-control searchSelect" name="store">
                                         <option value="">Select</option>
                                         @if(isset($getStore) && $getStore)
                                             @foreach($getStore as $key => $value)
@@ -48,37 +48,9 @@
                                     @enderror
                                 </div>
                                 <div class="mb-3 col-md-4">
-                                    <label for="shelf" class="form-label text-dark">shelf </label>
-                                    <select class="form-control searchSelect" name="shelf">
-                                        <option value="">Select</option>
-                                        @if(isset($getShelf) && $getShelf)
-                                            @foreach($getShelf as $key => $value)
-                                                <option value="{{$value->id}}" {{ (isset($editRecord) && $editRecord) && ($editRecord->shelveID == $value->id) ? 'selected' : (old('shelf') == $value->id ? 'selected' : '') }}>{{ $value->shelve_name }}</option>
-                                            @endforeach
-                                        @endif
-                                    </select>
-                                    @error('shelf')
-                                        <span class="invalid-feedback" role="alert">
-                                            <strong>{{ $message }}</strong>
-                                        </span>
-                                    @enderror
-                                </div>
-                                <div class="mb-3 col-md-3">
-                                    <label for="transactionDate" class="form-label text-dark">Transaction Date <span class="text-danger" title="This most be filled."><b>*</b></span> </label>
-                                    <input type="text" id="getDate" required class="form-control" name="transactionDate" value="{{ (isset($editRecord) && $editRecord) ? (date('d-m-Y', strtotime($editRecord->transactionDate))) : old('transactionDate') }}" placeholder="DD-MM-YY">
-                                    @error('transactionDate')
-                                        <span class="invalid-feedback" role="alert">
-                                            <strong>{{ $message }}</strong>
-                                        </span>
-                                    @enderror
-                                </div>
-                            </div>
-
-                            <div class="row mb-2">
-                                <div class="mb-3 col-md-5">
                                     <label for="product" class="form-label text-dark">Product<span class="text-danger" title="This most be filled."><b>*</b></span> </label>
                                     <select required class="form-control searchSelect" name="product" id="getProduct" placeholder="Pick a product">
-                                        <option value="">Select Product</option>
+                                        <option value="">Select product</option>
                                         @if(isset($getProduct) && $getProduct)
                                             @foreach($getProduct as $key => $value)
                                                 <option value="{{$value->id}}" {{ (isset($editRecord) && $editRecord) && ($editRecord->productID == $value->id) ? 'selected' : (old('product') == $value->id ? 'selected' : '') }}>{{ $value->productName }}</option>
@@ -92,12 +64,29 @@
                                     @enderror
                                 </div>
                                 <div class="mb-3 col-md-4">
-                                    <label for="measure" class="form-label text-dark">Product Measure <span class="text-danger" title="This most be filled."><b>*</b></span> </label>
+                                    <label for="shelf" class="form-label text-dark">Shelf </label>
+                                    <select class="form-control" id="shelfInStore" name="shelf">
+                                        <option value="">Select</option>
+                                       {{--  @if(isset($editRecord) && $editRecord)
+                                            <option value="{{ $editRecord->shelfID }}" selected>{{ $editRecord->shelve_name }} </option>
+                                        @endif --}}
+                                    </select>
+                                    @error('shelf')
+                                        <span class="invalid-feedback" role="alert">
+                                            <strong>{{ $message }}</strong>
+                                        </span>
+                                    @enderror
+                                </div>
+                            </div>
+
+                            <div class="row mb-2">
+                                <div class="mb-3 col-md-6">
+                                    <label for="measure" class="form-label text-dark">Product measure <span class="text-danger" title="This most be filled."><b>*</b></span> </label>
                                     <select required class="form-control" id="productMeasurement" name="measure">
                                         <option value="">Select Measurement</option>
-                                        @if(isset($editRecord) && $editRecord)
+                                        {{-- @if(isset($editRecord) && $editRecord)
                                             <option value="{{ $editRecord->measurementID }}" selected>{{ $editRecord->measureName }} </option>
-                                        @endif
+                                        @endif --}}
                                     </select>
                                     @error('measure')
                                         <span class="invalid-feedback" role="alert">
@@ -105,9 +94,9 @@
                                         </span>
                                     @enderror
                                 </div>
-                                <div class="mb-3 col-md-3">
+                                <div class="mb-3 col-md-6">
                                     <label for="quantity" class="form-label text-dark">Quantity <span class="text-danger" title="This most be filled."><b>*</b></span> </label>
-                                    <input type="number" required maxlength="100" class="form-control" name="quantity" value="{{ (isset($editRecord) && $editRecord) ? $editRecord->quantity : old('quantity') }}">
+                                    <input type="number" required maxlength="100" class="form-control" name="quantity" value="{{ (isset($editRecord) && $editRecord) ? $editRecord->quantity : '' }}">
                                     @error('quantity')
                                         <span class="invalid-feedback" role="alert">
                                             <strong>{{ $message }}</strong>
@@ -117,21 +106,11 @@
                             </div>
 
                             <div class="row mb-3">
-                                <!--<div class="mb-3 col-md-9">
-                                    <label for="description" class="form-label text-dark">Description </label>
-                                    <textarea class="form-control" name="description">{{ (isset($editRecord) && $editRecord) ? $editRecord->productDescription : old('description') }}</textarea>
-                                    @error('description')
-                                        <span class="invalid-feedback" role="alert">
-                                            <strong>{{ $message }}</strong>
-                                        </span>
-                                    @enderror
-                                </div>-->
-
                                 <div align="center" class="mb-3 col-md-12">
                                     @if((isset($editRecord) && $editRecord))
-                                        <button type="submit" name="submit" class="btn btn-outline-success">Update Record</button>
+                                        <button type="submit" name="submit" class="btn btn-outline-success">Update record</button>
                                     @else
-                                        <button type="submit" name="submit" class="btn btn-outline-success">Add New Entry</button>
+                                        <button type="submit" name="submit" class="btn btn-outline-success">Add new entry</button>
                                     @endif
                                 </div>
                             </div>
@@ -147,10 +126,6 @@
                     <div class="box_header m-0">
                         <div class="main-title">
 
-                            <div align="center">
-                                <button type="button" name="btnBatch" class="btn btn-outline btn-primary btn-sm" data-toggle="modal" data-backdrop="false" data-target="#confirmBatch" title="Batch All Records"> <i class="fa fa-file-o"></i> Batch Item </button>
-                            </div><br />
-
                             <table class="table table-bordered table-responsive table-hover">
                                 <tr class="bg-light text-dark">
                                     <th> SN </th>
@@ -159,10 +134,6 @@
                                     <th> PRODUCT </th>
                                     <th> MEASURE </th>
                                     <th> QTY </th>
-                                    <th> DESCRIPTION</th>
-                                    <th> ORDER NO. </th>
-                                    <th>STATUS</th>
-                                    <th> DATE </th>
                                     <th colspan="2"> </th>
                                 </tr>
                                 @if(isset($getRecords) && $getRecords)
@@ -174,10 +145,6 @@
                                             <td> {{ $value->productName }} </td>
                                             <td> {{ $value->measureName }} </td>
                                             <td> {{ $value->productQuantity }} </td>
-                                            <td> {{ $value->productDescription }} </td>
-                                            <td> {{ $value->orderNo }} </td>
-                                            <td> {{ $value->status == 1 ? 'Active' : 'Inactive' }} </td>
-                                            <td width="100"> {{ date('d-m-Y', strtotime($value->transactionDate)) }} </td>
                                             <td> <a href="{{ Route::has('editProductMovement') ? Route('editProductMovement', ['rid'=>$value->recordID]) : 'javascript:;'  }}" class="btn btn-outline-success btn-sm" title="Edit Record"> <i class="fa fa-edit"></i>  </a></td>
                                             <td> <button type="button" name="submit" class="btn btn-outline-warning btn-sm" data-toggle="modal" data-backdrop="false" data-target="#confirmToDelete{{$key}}" title="Delete Record"> <i class="fa fa-trash"></i> </button></td>
                                         </tr>
@@ -210,6 +177,10 @@
                                 @endif
                             </table>
 
+                             <div align="center">
+                                <button type="button" name="btnBatch" class="btn btn-outline btn-primary btn-sm" data-toggle="modal" data-backdrop="false" data-target="#confirmBatch" title="Batch All Records"> <i class="fa fa-file-o"></i> Batch Item </button>
+                            </div><br />
+
                         </div>
                     </div>
                 </div>
@@ -234,7 +205,16 @@
                     <div class="text-success text-center"> <h6>Are you sure you want to batch these records? </h6></div>
                     <hr />
                     <div class="mb-3 col-md-12">
-                        <label for="description" class="form-label text-dark">Description/Comment </label>
+                        <label for="transactionDate" class="form-label text-dark">Transaction Date <span class="text-danger" title="This most be filled."><b>*</b></span> </label>
+                        <input type="text" required name="transactionDate" class="form-control" id="date_from" placeholder="DD-MM-YY">
+                        @error('transactionDate')
+                            <span class="invalid-feedback" role="alert">
+                                <strong>{{ $message }}</strong>
+                            </span>
+                        @enderror
+                    </div>
+                    <div class="mb-3 col-md-12">
+                        <label for="description" class="form-label text-dark">Description/Comment <span class="text-danger" title="This most be filled."><b>*</b></span></label>
                         <textarea class="form-control" required name="description">{{ (isset($editRecord) && $editRecord) ? $editRecord->productDescription : old('description') }}</textarea>
                         @error('description')
                             <span class="invalid-feedback" role="alert">
@@ -256,38 +236,31 @@
 @endsection
 
 @section('style')
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/selectize.js/0.12.6/css/selectize.bootstrap3.min.css" integrity="sha256-ze/OEYGcFbPRmvCnrSeKbRTtjG4vGLHXgOqsyLFTRjg=" crossorigin="anonymous" />
+    <link rel="stylesheet" href="{{asset('assets/css/datepicker.min.css')}}"/>
 @endsection
 
 @section('script')
-<script>
-    //date format
-     //$(document).ready(function () {
-        $("#getDate").datepicker({
+    <script src="{{asset('assets/js/jquery-ui.min.js')}}"></script>
+    <script>
+    $('input[id$=date_from]').datepicker({
             changeMonth: true,
             changeYear: true,
             yearRange: '1910:2090', // specifying a hard coded year range
-            showOtherMonths: false,
-            selectOtherMonths: false,
-            dateFormat: "dd-mm-yyyy",
+            showOtherMonths: true,
+            selectOtherMonths: true,
+            dateFormat: "dd-mm-yy",
             onSelect: function(dateText, inst){
-                var options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-                //var theDate = new Date(Date.parse($(this).datepicker('getDate')));
-                var theDate = new Date(today.toLocaleDateString("en-NG", options));
-                var dateFormatted = $.datepicker.formatDate('dd-mm-yyyy', theDate);
+            var theDate = new Date(Date.parse($(this).datepicker('dateFrom')));
+            var dateFormatted = $.datepicker.formatDate('dd-mm-yy', theDate);
+            $('#dateFrom').val($.datepicker.formatDate('dd-mm-yy', theDate));
             },
         });
-    //});
-</script>
-    {{-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script> --}}
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/selectize.js/0.12.6/js/standalone/selectize.min.js" integrity="sha256-+C0A5Ilqmu4QcSPxrlGpaZxJ04VjsRjKu+G82kl5UJk=" crossorigin="anonymous"></script>
+
+    </script>
 
 <script>
     //select field with search
      $(document).ready(function () {
-        /* $('select').selectize({
-          sortField: 'text'
-        }); */
         $('.searchSelect').selectize({
           sortField: 'text'
         });
@@ -295,8 +268,16 @@
 
     //Get Product Measurements
     $(document).ready(function () {
+        var getPID = $('#getProduct').val();
+        var getPM = "{{isset($editRecord) && $editRecord ? $editRecord->measurementID : ''}}";
+        getProductMeasure(getPID);
         $('#getProduct').change(function() {
-            var productID = $('#getProduct').val();
+            var productID = (getPID != '' ? getPID : $('#getProduct').val());
+            getProductMeasure(productID);
+        });
+        //fetch
+        function getProductMeasure(productID)
+        {
             $.ajax({
                 url: '{{url("/")}}' +  '/get-product-measurement/' + productID,
                 type: 'get',
@@ -307,14 +288,54 @@
                     $('#productMeasurement').empty();
                     $('#productMeasurement').append($('<option>').text(" Select Measurement ").attr('value',""));
                     $.each(data, function(model, list) {
-                        $('#productMeasurement').append($('<option>').text(list.description).attr('value', list.measurementID));
+                        if(list.measurementID == getPM)
+                        {
+                            $('#productMeasurement').append($('<option>').text(list.description).attr('value', list.measurementID).attr('selected', true));
+                        }else{
+                            $('#productMeasurement').append($('<option>').text(list.description).attr('value', list.measurementID));
+                        }
                     });
                 },
                 error: function(error) {
                     alert("Please we are having issue getting product measurement. Check your network or refresh this page !!!");
                 }
             });
+        }
+    });
+
+    //Get Shelf from storeID
+    $(document).ready(function () {
+        var sID = $('#getStore').val();
+        var getRID = "{{isset($editRecord) && $editRecord ? $editRecord->shelfID : ''}}";
+        getShelves(sID);
+        $('#getStore').change(function() {
+            var storeID = $('#getStore').val();
+            getShelves(storeID);
         });
+        function getShelves(storeID)
+        {
+            $.ajax({
+                url: '{{url("/")}}' +  '/get-shelf-from-store/' + storeID,
+                type: 'get',
+                data: { format: 'json' },
+                dataType: 'json',
+                success: function(data) {
+                    $('#shelfInStore').empty();
+                    $('#shelfInStore').append($('<option>').text(" Select ").attr('value',""));
+                    $.each(data, function(model, list) {
+                        if(list.id == getRID)
+                        {
+                            $('#shelfInStore').append($("<option>").text(list.shelve_name).attr('value', list.id).attr('selected', true));
+                        }else{
+                            $('#shelfInStore').append($("<option>").text(list.shelve_name).attr('value', list.id));
+                        }
+                    });
+                },
+                error: function(error) {
+                    alert("Please we are having issue getting your shelf. Check your network or refresh this page !!!");
+                }
+            });
+        }
     });
 
 </script>

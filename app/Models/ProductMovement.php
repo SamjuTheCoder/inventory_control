@@ -11,6 +11,7 @@ class ProductMovement extends Model
 
     protected $fillable = [
         'storeID',
+        'storeID_destination',
         'userID',
         'productID',
         'measurementID',
@@ -24,7 +25,13 @@ class ProductMovement extends Model
         'shelveID',
         'isConfirmed',
         'isConfirmedBy',
+        'adjust_reason',
+        'is_adjusted',
         'hasColor',
         'status',
+        'move_in_out_type',
+        'is_transferred',
+        'is_accepted',
+        'transfer_refID',
     ];
 }

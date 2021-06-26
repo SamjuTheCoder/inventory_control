@@ -9,7 +9,7 @@
             <div class="white_card_header">
                 <div class="box_header m-0">
                     <div class="main-title">
-                        <h3 class="m-0 text-uppercase"><span class="fa fa-measure"></span> @yield('pageHeaderTitle')</h3>
+                        <h3 class="m-0"><span class="fa fa-measure"></span> @yield('pageHeaderTitle')</h3>
                     </div>
                 </div>
             </div>
@@ -30,7 +30,7 @@
                         <form action="{{ Route::has('saveMeasurement') ? Route('saveMeasurement') : '#' }}" method="post" enctype="multipart/form-data">
                         @csrf
                             <div class="mb-3 col-md-6 offset-md-3"> 
-                                <label for="measurementName" class="form-label text-dark">Enter measurement Name <span class="text-danger" title="This most be filled."><b>*</b></span> </label>
+                                <label for="measurementName" class="form-label text-dark">Enter measurement name <span class="text-danger" title="This most be filled."><b>*</b></span> </label>
                                 <input type="text" required maxlength="190" autofocus class="form-control" name="measurementName" value="{{ (isset($editRecord) && $editRecord) ? $editRecord->description : old('measurementName') }}"> <!-- aria-describedby="description" -->
                                 <input type="hidden" name="getRecord" value="{{ (isset($editRecord) && $editRecord) ? $editRecord->id : old('getRecord') }}"> 
                                 @error('measurementName')
@@ -64,8 +64,8 @@
                             <table class="table table-bordered table-responsive table-hover">
                                 <tr class="bg-light text-dark">
                                     <th> SN </th>
-                                    <th> DESCRIPTION </th>
-                                    <th> CREATED ON </th>
+                                    <th> Description </th>
+                                    {{-- <th> Created On </th> --}}
                                     <th colspan="2"> </th>
                                 </tr>
                                 @if(isset($getRecords) && $getRecords)
@@ -73,7 +73,7 @@
                                         <tr>
                                             <td> {{ ($key + 1) }} </td>
                                             <td> {{ $value->description }} </td>
-                                            <td> {{ date('d-m-Y', strtotime($value->created_at)) }} </td>
+                                            {{-- <td> {{ date('d-m-Y', strtotime($value->created_at)) }} </td> --}}
                                             <td> <a href="{{ Route::has('editMeasurement') ? Route('editMeasurement', ['rid'=>$value->id]) : 'javascript:;'  }}" class="btn btn-outline-success btn-sm" title="Edit Record"> <i class="fa fa-edit"></i>  </a></td>
                                             <td> <button type="button" name="submit" class="btn btn-outline-warning btn-sm" data-toggle="modal" data-backdrop="false" data-target="#confirmToDelete{{$key}}" title="Delete Record"> <i class="fa fa-trash"></i>  </button></td>
                                         </tr>

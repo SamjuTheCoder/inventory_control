@@ -42,7 +42,7 @@
                     @csrf
                         <div class="form-row">
                             <div class="form-group col-md-6">
-                                <label for="inputEmail4">Store Name:<i style="color:red">*</i></label>
+                                <label for="inputEmail4">Store name:<i style="color:red">*</i></label>
                                 <input type="text" name="store_name" class="form-control" id="storeName" placeholder="Store Name" value="{{ old('storeName') }}" required>
                             </div>
                             <div class="form-group col-md-6">

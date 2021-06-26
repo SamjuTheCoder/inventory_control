@@ -40,9 +40,7 @@
     <div class="col-md-6">
         <div class="white_card card_height_100 mb_30">
             <div class="white_card_header">
-                <div class="">
-
-                    
+                <div class="">              
 
                     <form action="{{ Route::has('saveCategory') ? Route('saveCategory') : '#' }}" method="post" enctype="multipart/form-data">
                         @csrf
@@ -59,8 +57,10 @@
                         
 
                         <div align="center" class="mb-3 col-md-12">
-                            @if(isset($editCategory) && $editCategory)
+                            @if(isset($getEditRecord) && $getEditRecord)
+                            <input type="hidden" name="recordID" value="{{ (isset($getEditRecord) && $getEditRecord) ? $getEditRecord->id : old('recordID') }}">
                                 <button type="submit" name="submit" class="btn btn-secondary">Update</button>
+                                <button type="button" onclick="clearSession()" id="cancel" class="btn btn-warning" data-dismiss="modal"> Cancel </button>
                             @else
                                 <button type="submit" name="submit" class="btn btn-primary">Save</button>
                             @endif
@@ -76,14 +76,14 @@
     <div class="col-md-6">
         <div class="white_card card_height_100 mb_30">
             <div class="white_card_header">
-                     <!-- @includeIf('share.operationCallBackAlert', ['showAlert' => 1]) -->
+                  
 
-                    <form action="{{ Route::has('saveAndUpdate') ? Route('saveAndUpdate') : '#' }}" method="post" enctype="multipart/form-data">
+                    <form action="{{ Route::has('SaveSubCategory') ? Route('SaveSubCategory') : '#' }}" method="post" enctype="multipart/form-data">
                      @csrf
                         <div class="row">
                             
-                            <div class="form-row">
-                                <div class="form-group mx-sm-3 mb-2">
+                           
+                                <div class="form-group mx-sm-6 mb-3 mr-4">
                                     
                                     <label for="category_id" class="form-label text-dark">Category<span class="text-danger" title="This must be filled."><b>*</b></span> </label>                                    
                                     <select id="category" name="category_id" class="form-control">
@@ -98,9 +98,9 @@
                                     <div class="invalid-feedback" role='alert' style="display: block;"><strong>{{$message}}</strong></div>
                                     @enderror
                                 </div>
-                            </div> 
-                            <div class="form-group mx-sm-3 mb-2">
-                                <label for="subCategory" class="form-label text-dark"> sub-category<span class="text-danger" title="This must be filled."><b>*</b></span> </label>
+                            
+                            <div class="form-group mx-sm-6 mb-3">
+                                <label for="subCategory" class="form-label text-dark"> Subcategory<span class="text-danger" title="This must be filled."><b>*</b></span> </label>
                                 <input type="text"   class="form-control" name="subCategory" value="{{ (isset($editSubCategory) && $editSubCategory) ? $editSubCategory->subcategoryName : old('subCategory') }}"> 
                                 @error('subCategory')
                                     <span class="invalid-feedback" role="alert">
@@ -116,6 +116,7 @@
                             @if(isset($editSubCategory) && $editSubCategory)
                             <input type="hidden" name="recordID" value="{{ (isset($editSubCategory) && $editSubCategory) ? $editSubCategory->subCategoryID : old('recordID') }}"> 
                                 <button type="submit" name="submit" class="btn btn-secondary">Update</button>
+                                <button type="button" onclick="clearSession2()" id="cancel" class="btn btn-warning" data-dismiss="modal"> Cancel </button>
                             @else
                                 <button type="submit" name="submit" class="btn btn-primary">Save</button>
                             @endif
@@ -151,10 +152,11 @@
                     @if(isset($getCategory) && $getCategory)
                         @foreach($getCategory as $key => $value)
                             <tr>
-                                <td> {{ ($key + 1) }} </td>
+                                <td> {{ ($value->firstItem() + $key ) }}</td>
                                 <td> {{ $value->categoryTitle }} </td>                               
                                 <td> <a href="{{ Route::has('editCategory') ? Route('editCategory', ['rid'=>$value->id]) : 'javascript:;'  }}" class="btn btn-outline-success btn-sm"><i class="fa fa-edit"></i></a>
-                                 <button type="button" name="submit" class="btn btn-outline-danger btn-sm" data-toggle="modal" data-backdrop="false" data-target="#confirmToDelete{{$key}}"><i class="fa fa-trash"></i></button></td>                                        
+                                 <button type="button" name="submit" class="btn btn-outline-danger btn-sm" data-toggle="modal" data-backdrop="false" data-target="#confirmToDelete{{$key}}"><i class="fa fa-trash"></i></button>
+                                </td>                                        
                             </tr>
                         
                         <!-- Modal - confirm to delete -->
@@ -182,7 +184,7 @@
                         @endforeach
                     @endif
                 </table>
-            </div>
+             </div>
         </div>
     </div>
     <!--Second table -->
@@ -191,7 +193,7 @@
           <div class="white_card_header">
               <div class="box_header m-0">
                   <div class="main-title">
-                      <h3 class="m-0">Sub-Category</h3>
+                      <h3 class="m-0">Subcategory</h3>
                   </div>
               </div>
           </div>
@@ -204,20 +206,25 @@
                         <tr>
                             <th> SN </th>
                             <th> Category </th>
-                            <th> Sub-Category </th>
+                            <th> Subcategory </th>
                             {{-- <th>Created</th> --}}
                             <th> Action</th>
                         </tr>
                     </thead>
-                    @if(isset($get_sub_Category) && $get_sub_Category)
+                    @if(isset($getSubCategory) && $getSubCategory)
                         @foreach($getSubCategory as $key => $value)
                             <tr>
-                                <td> {{ ($key + 1) }} </td>
+                                <td> {{ ($getSubCategory->firstItem() + $key ) }} </td>
                                 <td> {{ $value->categoryTitle }} </td>
                                 <td>{{ $value->subcategoryName }}</td>
                                 {{-- <td> {{ date('d-m-Y', strtotime($value->created_at)) }} </td> --}}
-                                <td> <a href="{{ url('category/edit/sub/'.$value->catID) }}" class="btn btn-outline-success btn-sm"> <i class="fa fa-edit"></i></a>
-                                <button type="button" name="submit" class="btn btn-outline-danger btn-sm" data-toggle="modal" data-backdrop="false" data-target="#confirmToDelete1{{$key}}"><i class="fa fa-trash"></button></td>                                        
+                                <td> 
+                                    <div class="btn-group" role="group">
+                                        <a href="{{ url('category/edit/sub/'.$value->subcatID) }}" class="btn btn-outline-success btn-sm mr-1"> <i class="fa fa-edit"></i></a>
+                                        <button type="button ml 2" name="submit" class="btn btn-outline-danger btn-sm" data-toggle="modal" data-backdrop="false" data-target="#confirmToDelete1{{$key}}"><i class="fa fa-trash"></i></button>
+                                    </div>
+                                </td>                                        
+                                    
                             </tr>
                         
                             <!-- Modal - confirm to delete -->
@@ -232,11 +239,11 @@
                                         </div>
                                         <div class="modal-body">
                                             <div class="text-success text-center"> <h6>Are you sure you want to remove this record? </h6></div>
-                                            <div class="text-dark text-center">  {{ $value->categoryTitle }} </div>
+                                            <div class="text-dark text-center">  {{ $value->subcategoryName }} </div>
                                         </div>
                                         <div class="modal-footer">
                                             <button type="button" class="btn btn-outline-default" data-dismiss="modal"> Cancel </button>
-                                            <a href="{{ Route::has('deleteSubCategory') ? Route('deleteSubCategory', ['id'=>$value->id]) : 'javascript:;'  }}" type="submit" class="btn btn-outline-danger"> Delete </a>
+                                            <a href="{{ Route::has('deleteSubCategory') ? Route('deleteSubCategory', ['id'=>$value->subcatID]) : 'javascript:;'  }}" type="submit" class="btn btn-outline-danger"> Delete </a>
                                         </div>
                                     </div>
                                 </div>
@@ -246,7 +253,8 @@
                     @endif
                 </table>
             </div>
-        
+            {{-- {!! $getSubCategory->links() !!}  --}}
+            {!! $getSubCategory->render("pagination::bootstrap-4") !!}        
           </div>
       </div>
     </div>
@@ -260,4 +268,22 @@
     color:white !important;
 }
 </style>
+@endsection
+
+@section('script')
+<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.1/jquery-ui.min.js"></script>
+
+<script>
+    function clearSession() {
+    location.href = "{{ route('forgetCategory')}}";
+    }
+</script>
+
+<script>
+    function clearSession2() {
+    location.href = "{{ route('forgetSubCategory')}}";
+    }
+</script>
+
 @endsection

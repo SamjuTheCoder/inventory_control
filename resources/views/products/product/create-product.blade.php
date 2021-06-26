@@ -17,7 +17,9 @@
 @endsection
 @section('content')
 <div class="row justify-content-center">
+       <div class="col-md-12">
         @includeIf('share.operationCallBackAlert', ['showAlert' => 1])
+       </div>
 <div class="col-lg-12">
         <div class="white_card card_height_100 mb_30">
             <div class="white_card_header">
@@ -32,23 +34,27 @@
                     @csrf
                     <div class="row">
                         <div class="form-group mb-2 col-md-6">
-                            <label for="staticEmail2" class="sr-onl">Product Name<span class="text-danger" title="This most be filled."><b>*</b></span> </label>
-                            <input type="text" class="form-control" name="product_name" id="inputText" placeholder="Product name">
+                            <label for="staticEmail2" class="sr-onl">Product name<span class="text-danger" title="This most be filled."><b>*</b></span> </label>
+                            <input type="text" class="form-control" name="product_name" id="inputText" placeholder="Product name" value="{{old('product_name')}}">
                             @error('product_name')
                                 <div class="invalid-feedback" role='alert' style="display: block;"><strong>{{$message}}</strong></div>
                             @enderror
                         </div>
                         <div class="form-group mb-2 col-md-3">
                             <label for="staticEmail2" class="sr-onl mr-2">Bar code number</label>
-                            <input type="text" class="form-control" name="barcode_number" id="inputText" placeholder="Bar code number">
+                            <input type="text" class="form-control" name="barcode_number" id="inputText" placeholder="Bar code number" value="{{old('barcode_number')}}">
                         </div>
                         
                         <div class="form-group mb-2 col-md-3">
-                            <label for="staticEmail2" class="sr-onl">Minimum Measurement<span class="text-danger" title="This most be filled."><b>*</b></span> </label>
-                            <select id="min-measurement" name="minimum_measurement" class="form-control">
+                            <label for="staticEmail2" class="sr-onl">Minimum measurement<span class="text-danger" title="This most be filled."><b>*</b></span> </label>
+                            <select id="min-measurement" name="minimum_measurement" class="form-control" >
                                 <option selected="">Choose...</option>
                                 @foreach ($dataMeasurement as $item)
-                                    <option value="{{$item->id}}">{{$item->description}}</option>
+                                    @if (old('minimum_measurement') == $item->id)
+                                      <option value="{{$item->id}}" selected>{{$item->description}}</option>
+                                    @else
+                                      <option value="{{$item->id}}">{{$item->description}}</option>
+                                    @endif
                                 @endforeach
                             </select>
                         </div>
@@ -60,7 +66,11 @@
                             <select id="category" name="category" class="form-control">
                                 <option selected="">Choose...</option>
                                 @foreach ($dataCategory as $item)
-                                    <option value="{{$item->id}}">{{$item->categoryTitle}}</option>
+                                    @if (old('category') == $item->id)
+                                      <option value="{{$item->id}}" selected>{{$item->categoryTitle}}</option>
+                                    @else
+                                      <option value="{{$item->id}}">{{$item->categoryTitle}}</option>
+                                    @endif
                                 @endforeach
                             </select>
                             @error('category')
@@ -68,7 +78,7 @@
                             @enderror
                         </div>
                         <div class="form-group col-md-3 mb-2">
-                            <label for="inputPassword2" class="sr-onl mr-2">Sub category<span class="text-danger" title="This most be filled."><b>*</b></span> </label>
+                            <label for="inputPassword2" class="sr-onl mr-2">Subcategory<span class="text-danger" title="This most be filled."><b>*</b></span> </label>
                             
                             <select id="subcategory" name="subcategory" class="form-control">
                                 <option selected="">Choose...</option>
@@ -77,10 +87,7 @@
                             <div class="invalid-feedback" role='alert' style="display: block;"><strong>{{$message}}</strong></div>
                             @enderror
                         </div>
-                        
                     </div>
-                    
-                    
                     <div class="row justify-content-center"><button type="submit" class="btn btn-primary mb-2">Save</button></div>
                 </form>
             </div>
@@ -92,7 +99,7 @@
             <div class="white_card_header">
                 <div class="box_header m-0">
                     <div class="main-title">
-                        <h3 class="m-0">Product table</h3>
+                        <h3 class="m-0">Product List</h3>
                     </div>
                 </div>
             </div>
@@ -119,9 +126,9 @@
                                         <td>{{$item->productName}}</td>
                                         <td>
                                             <div class="btn-group" role="group" aria-label="Basic example">
-                                                <a onclick="productDetail('{{$item->id}}', '{{$item->productName}}')" class="btn btn-outline-success mr-sm-1" data-toggle="modal" data-target="#prUploadImg"><i class="ti-image"></i></a>
+                                                <!--<a onclick="productDetail('{{$item->id}}', '{{$item->productName}}')" class="btn btn-outline-success mr-sm-1" data-toggle="modal" data-target="#prUploadImg"><i class="ti-image"></i></a>-->
                                                 <a href="{{route('edit-product', ['id'=> encrypt($item->id)])}}" class="btn btn btn-outline-warning  mr-sm-1"><i class="ti-pencil"></i></a>
-                                                <a href="#" class="btn btn btn-outline-danger"><i class="ti-trash"></i></a>
+                                                <a href="#" class="btn btn btn-outline-danger"  data-toggle="modal" data-target="#productDelete" onclick="getProductDetailDelete('{{$item->id}}')"><i class="ti-trash"></i></a>
                                             </div>
                                         </td>
                                     </tr>
@@ -172,6 +179,7 @@
                     <div class="invalid-feedback" role='alert' style="display: block;"><strong>{{$message}}</strong></div>
                     @enderror
                 </div>
+
                 <img src="{{asset('assets\img\prd_avatar.png')}}" class="js-tilt" data-tilt-speed="1000" data-tilt-max="20" data-tilt-scale="1.01" data-tilt-perspective="250" id="output_image"/>
             </div>
           
@@ -179,45 +187,45 @@
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
           <button type="submit" class="btn btn-primary">Save changes</button>
-        </div></form>
+        </div>
+    </form>
       </div>
     </div>
   </div>
-      <!-- Delete-->
-  <div class="modal fade" id="delete" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" role="document">
-      <div class="modal-content">
-        <form action="{{route('image-product')}}" method="post" enctype="multipart/form-data">
-        <div class="modal-header">
-          <h5 class="modal-title" id="exampleModalLongTitle">Edit</h5>
-          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-            <span aria-hidden="true">&times;</span>
-          </button>
-        </div>
-        <div class="modal-body">
-          
-              @csrf
-            <div class="form-group mx-sm-3 mb-2">
-                <label for="inputPassword2" class="sr-onl mr-4">Product<span class="text-danger" title="This most be filled."><b>*</b></span> </label>
-                <input type="text" id="prName" class="form-control" value="" name="product_name" id="inputText" placeholder="Product name">
-                @error('category')
-                <div class="invalid-feedback" role='alert' style="display: block;"><strong>{{$message}}</strong></div>
-                @enderror
+
+          <!-- Delete product -->
+          <div class="modal fade" id="productDelete" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+              <div class="modal-content">
+                <form action="{{route('delete-product')}}" method="post" enctype="multipart/form-data">
+                <div class="modal-header">
+                  <h5 class="modal-title" id="exampleModalLongTitle"><i class="ti-na text-danger" style="font-weight: bolder;"></i> Delete </h5>
+                  <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                  </button>
+                </div>
+                <div class="modal-body">
+                      @csrf
+                      <input type="hidden" name="product_id" id="delete_pr_id">
+                       Are you sure you want to delete this record?
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                  <button type="submit" class="btn btn-danger" >Delete</button>
+                </div>
+            </form>
+              </div>
             </div>
-            
-          
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-          <button type="submit" class="btn btn-primary">Save changes</button>
-        </div></form>
-      </div>
-    </div>
-  </div>
+          </div>
 
 @endsection
 
 @section('script')
+<script>
+    function getProductDetailDelete(data) {
+            $('#delete_pr_id').val(data);
+        }
+</script>
     <script type='text/javascript'>
         function preview_image(event) 
         {
@@ -239,8 +247,8 @@
             $(document).ready(function(){
                 var prName  =   $('#prName');
                 var prID  =   $('#prID');
-                prName.val(name)
-                prID.val(id)
+                prName.val(name);
+                prID.val(id);
             })
         }
         $('#subcategory').attr('disabled', 'true');

@@ -52,6 +52,15 @@
                             <div class="QA_section">
                                 <div class="QA_table mb-0 transaction-table">
                                     <!-- table-responsive -->
+                                    @if(!empty($product))
+                                    @if($product->move_in == 0)
+                                    <h6>Destination: {{$product->location ?? ''}}</h6>
+                                    @endif
+                                    @endif
+                                    <h6>Description: {{$product->description ?? ''}} </h6>
+                        <h6>Order Number: {{$product->orderNo ?? ''}}</h6>
+                        <h6>Warehouser: {{$product->store_name ?? ''}}</h6>
+                        <h6>Movement Date: {{date('d-m-Y', strtotime($product->transactionDate))}}</h6>
                                     <div class="table-responsive">
                                     <form method="post" action="{{url('/cancel/order')}}">
                                     @csrf
@@ -61,9 +70,9 @@
                                                         <th scope="col">SN</th>
                                                         <th> Product Name</th>
                                                         <th> Quantity</th>
-                                                        <th> Movement Date </th>
                                                         
-                                                        <th scope="col">Cancel <span class="float-right"> <input type="checkbox" name="all" id="checkall"> Checkall</span></th>
+                                                        <td>Status</th>
+                                                        <th scope="col"> <span> @if($isconfirm > 0) <input type="checkbox" name="all" id="checkall"> Checkall</span> <span  class="float-right">Cancel</span>@endif</th>
                                                         
                                                     </tr>
                                                 </thead>
@@ -72,20 +81,68 @@
                                                 $n = 1;
                                                 @endphp
                                                 @foreach($orders as $list)
+                                                @php
+                $checkconfirmed = DB::table('product_movements')->where('orderNo','=', $list->orderNo)->where('id','=', $list->prodMovementID)->first();
+                $rejectedComment = DB::table('rejected_comment')->where('item_id','=', $list->prodMovementID)->first();
+                $isrejected = DB::table('product_movements')->where('orderNo','=', $list->orderNo)->where('id','=', $list->prodMovementID)->where('isConfirmed','=', 2)->count();
+
+         $q1=db::table('measurement_units')->select('measurement_units.*','measurements.description')
+        ->leftJoin('measurements','measurements.id','measurement_units.measurementID')
+        ->orderby('quantity', 'desc')->where('productID',$list->prodID)->get();
+        //dd($q1);
+        $qty = $list->move_out;
+        $qty1=$qty;
+        $data='';
+        foreach ($q1 as $b){
+            $formatqty= $b->quantity;
+            if($formatqty==0)$formatqty=1;
+            $q = intval($qty / $formatqty);
+            $qty = $qty % $formatqty;
+            if($q<>0){
+               $data.= ' '.Abs($q).$b->description;
+             }    
+        }
+             $data = (int)$qty1 < 0 ? '('.$data.')':$data;
+         
+                                                @endphp
                                                     <tr>
                                                         <td scope="row">{{$n++}}</td>
                                                         <td>{{$list->productName}} </td>
-                                                        <td>{{$list->move_out}} </td>
-                                                        <td>{{$list->transactionDate}} </td>
+                                                        <td>{{$list->move_out}} [ <span style="color:green;"> {{$data}} </span>]</td>
                                                         
+                                                        <td>@if($isrejected > 0)
+                                                        <a href="javascript:void()" class="btn btn-outline-success btn-sm comment"  comm="{{$rejectedComment->comment ?? ''}}">Reason for Rejection</a>
+
                                                         
-                                                        <td><input type="checkbox" name="item[]" value="{{$list->prodMovementID}}"></td>                                                                                                             </td>
+
+                                                        <a prodMovementID="{{$list->prodMovementID}}" product="{{$list->prodID}}" quantity="{{$list->outQty}}" href="javascript:void()" class="btn btn-outline-success btn-sm resend">Re-send</a>
+                                                        @else
+                                                        @if(!empty($checkconfirmed))
+                                                        @if($checkconfirmed->isConfirmed ==1)
+                                                        <span>Confirmed</span>
+                                                        @elseif($checkconfirmed->isConfirmed ==0)
+                                                        <span>Awaiting Confirmation</span>
+                                                        @endif
+                                                        @endif
+                                                        @endif
+                                                            <a measureID="{{$list->measurementID}}" measurement="{{$list->desc}}" prodMovementID="{{$list->prodMovementID}}" product="{{$list->prodID}}" quantity="{{$list->outQty}}" href="javascript:void()" class="btn btn-outline-success btn-sm adjust">Adjust Qty</a>
+                                                       </td>
+                                                        <td>
+                                                        @if(!empty($checkconfirmed) )
+                                                        @if($checkconfirmed->isConfirmed == 2 )
+                                                        <input type="checkbox" name="item[]" value="{{$list->prodMovementID}}">          
+                                                        @endif
+                                                        @endif
+                                                        
+                                                        </td>
                                                     </tr>
                                                 @endforeach
                                                     
                                                 </tbody>
                                             </table>
+                                            @if($isconfirm > 0)
                                             <button type="submit" onclick="return confirmDelete();" class="btn btn-outline-success float-right">Cancel</button>
+                                            @endif
                                             </form>
                                     </div>
                                 </div>
@@ -99,85 +156,177 @@
         </div>
     </div>
 </div>
-
-<!-- Edit Shelve Modal -->
-@section('modal')
-<form method="post" action="{{url('/update/shelve')}}">
-{{ csrf_field() }}
-<div id="editModal" class="modal fade" style="z-index:5000">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                <h4 class="modal-title"></h4>
-                <p id="message"></p>
-            </div>
-            <div class="modal-body">
-            
-            
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-                <button type="submit" class="btn btn-primary adv" id="adv">Save changes</button>
-            </div>
-        </div>
-    </div>
-</div>
-</form>
 @endsection
 
-                <!-- /// Edit Shelve Modal -->
+@section('modal')
 
 
+<!--  Modal -->
+<div id="descmodal"  class="modal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"></h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p id="description"></p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        
+      </div>
+    </div>
+  </div>
+</div>
+<!-- /// Modal -->
+
+
+
+
+@endsection
+
+@section('modal2')
+
+
+<!--  Modal -->
+<div id="mymodal" class="modal " tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"></h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+       <form method="post" action="{{url('/adjust/quantity')}}">
+            {{ csrf_field() }}
+      <div class="modal-body">
+
+            <div class="row mb-2">
+                                <div class="mb-3 col-md-6">
+                                    <label for="measure" class="form-label text-dark">Product Measure <span class="text-danger" title="This most be filled."><b>*</b></span> </label>
+                                    <select required class="form-control m" id="productMeasurement" name="measure">
+                                        <option value="">Select Measurement</option>
+                                        @if(!empty($mesurements))
+                                        @foreach($mesurements as $list)
+                                            <option value="{{$list->measureID}}">{{$list->description}}</option>
+                                        @endforeach
+                                        @endif
+                                    </select>
+                                    <input type="hidden" name="productMovementID" id="prodMovementID">
+                                    <input type="hidden" name="productID" id="prodID">
+                                </div>
+                                <div class="mb-3 col-md-6">
+                                    <label for="quantity" class="form-label text-dark">Quantity <span class="text-danger" title="This most be filled."><b>*</b></span> </label>
+                                    <input type="number" required maxlength="100" class="form-control" name="quantity" id="quantity" value="">
+                                                                    </div>
+                            </div>
+
+       
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        <button type="submit" class="btn btn-primary adv" id="adv">Save changes</button>
+        
+      </div>
+       </form>
+    </div>
+  </div>
+</div>
+<!-- /// Modal -->
+
+
+<!--  Modal -->
+<div id="resendmodal"  class="modal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"></h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <form method="post" action="{{url('/resend/product')}}">
+      <div class="modal-body">
+        <input type="hidden" name="productMovementID" id="prodMovementId">
+        <p> Do you actually want to resend this product ?</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">No</button>
+        <button type="submit" class="btn btn-primary adv" id="adv">Yes</button>
+      </div>
+  </form>
+    </div>
+  </div>
+</div>
+<!-- /// Modal -->
+
+@endsection
+
+@section('style')
+<style type="text/css">
+    svg, #SvgjsSvg1001
+    {
+        display: none;
+    }
+</style>
 
 @endsection
 
 @section('script')
-<script>
-    $(document).ready(function(){
-  
-    $("table tr td .edit").click(function(){
-       $('#desc').val($(this).attr('description'));
-       $('#shelve').val($(this).attr('name'));
-       $('#storeName').val($(this).attr('storeName'));
-     
-       var storeID = $(this).attr('storeID');
-       var storeName = $(this).attr('storeName');
-       $('#shelveID').val($(this).attr('shelveID'));
-       $('#storeID').append("<option value='"+storeID+"' selected>"+ storeName+"<option>");
-        $("#editModal").modal('show');
-    });
-    
-    }); 
 
+<script>
+
+    $(document).ready(function(){
+
+    $("table tr td .comment").click(function(){
+
+       $('#description').html($(this).attr('comm'));
+       //alert(2);
+       $('#descmodal').modal('show');
+    });
+
+    });
+</script>
+
+
+<script>
+
+    $(document).ready(function(){
+
+    $("table tr td .adjust").click(function(){
+        
+        var id = $(this).attr('measureID');
+        var measure = $(this).attr('measurement');
+        
+      $('#quantity').val($(this).attr('quantity'));
+      $('#prodID').val($(this).attr('product'));
+      $('#prodMovementID').val($(this).attr('prodMovementID'));
+      $('.m').find('option:selected').remove();
+       $('.m').append('<option value="'+ id +'" selected>'+ measure +'</option>');
+       //alert(2);
+       $('#mymodal').modal('show');
+    });
+
+    });
 </script>
 
 <script>
+
     $(document).ready(function(){
-  
-    $("table tr td .del").click(function(){
-       
-       $('#user').val($(this).attr('userID'));
-    
-        $("#delModal").modal('show');
-    });
-    
+
+    $("table tr td .resend").click(function(){
+
+      $('#prodMovementId').val($(this).attr('prodMovementID'));
+       $('#resendmodal').modal('show');
     });
 
-    function confirmDelete()
-    {
-        var x = confirm('Are you sure you want to delete this record ?');
-        if (x)
-        {
-            return true;
-        } 
-        else
-        {
-            return false;
-        }
-    }
-
+    });
 </script>
+
 <script>
 $(document).ready(function(){
 
@@ -191,4 +340,5 @@ state ? $(':checkbox').prop('checked',true) : $(':checkbox').prop('checked',fals
 
 });
 </script>
+
 @endsection

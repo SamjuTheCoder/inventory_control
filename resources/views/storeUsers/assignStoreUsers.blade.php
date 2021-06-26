@@ -72,7 +72,7 @@
             <div class="white_card_header ">
                             <div class="box_header m-0">
                                 <div class="main-title">
-                                    <h3 class="m-0">List of Store Users</h3>
+                                    <h3 class="m-0">List of store users</h3>
                                 </div>
                                 <a href="#">
                                     <p></p>

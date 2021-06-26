@@ -15,7 +15,7 @@ table.dataTable thead td {
     border: 0 solid transparent;
     font-size: 14px;
     font-weight:300;
-    color: #00273d;
+    color: #ffffff !important;
 }
 table.dataTable thead th:active,
 table.dataTable thead td:active {
@@ -61,8 +61,8 @@ table.dataTable tbody th,
 table.dataTable tbody td {
   padding: 16px 25px;
   font-size: 12px;
-  color: #888;
-  font-weight: 300;
+  /*color: #888;*/
+  font-weight: 700;
 }
 table.dataTable.row-border tbody th,
 table.dataTable.row-border tbody td,

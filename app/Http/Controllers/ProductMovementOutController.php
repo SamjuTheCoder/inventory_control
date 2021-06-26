@@ -13,6 +13,7 @@ use App\Models\StoreUser;
 use App\Models\Shelf;
 use Session;
 use Auth;
+use DB;
 
 
 class ProductMovementOutController extends Controller
@@ -27,26 +28,30 @@ class ProductMovementOutController extends Controller
     //create measurement
     public function createProductMovement()
     {
+        return view('products.productMovement.itemEntryOut', $this->indexData());
+    }//end fun
+
+    function indexData()
+    {
         $data['getRecords']     = [];
         $data['getStore']       = [];
         $data['getShelf']       = [];
         $data['getMeasurement'] = [];
         $data['getProduct']     = [];
 
-        try{
+        try{ 
             $data['getRecords']     = $this->getProductEntered();
-            $data['getStore']       = $this->getUserStore($userID = null); //you can reuse this function by passing one parameter: userID
+            $data['getStore']       = $this->getUserStore(); //you can reuse this function by passing one parameter: userID
             //$data['getShelf']       = Shelf::all();
             $data['getProject']     = Project::all();
             $data['getProduct']     = Product::all();
             (Session::get('editRecord') ? $data['editRecord'] = Session::get('editRecord') : null);
+            Session::forget('editRecord');
         }catch(\Throwable $getError){
             $this->storeTryCatchError($getError, 'ProductMovementOutController@createProductMovement', 'Error occurred when fetching records.' );
         }
-        Session::forget('editRecord');
-        return view('products.productMovement.itemEntryOut', $data);
-    }//end fun
-
+        return $data;
+    }
 
 
     //Get Measurement when a product is selected
@@ -57,7 +62,7 @@ class ProductMovementOutController extends Controller
         {
             $getMeasurement = MeasurementUnitModel::where('measurement_units.productID', $productID)
                             ->join('measurements', 'measurements.id', '=', 'measurement_units.measurementID')
-                            ->select('description', 'measurementID')
+                            ->select('measurement_units.id as id', 'description', 'measurementID', 'quantity')
                             ->get();
         }
         return $getMeasurement;
@@ -89,16 +94,21 @@ class ProductMovementOutController extends Controller
         [
             'store'             => ['required', 'numeric'],
             'project'           => ['required', 'numeric'],
-            'transactionDate'   => ['required', 'date'],
             'product'           => ['required', 'numeric'],
             'measure'           => ['required', 'numeric'],
-            'quantity'          => ['required', 'numeric'],
-            //'description'       => ['required', 'string'],
+            'quantity'          => ['required', 'numeric', 'min: 1'],
 
         ]);
         $recordID = $request['getRecord'];
         //DB transactions
         try{
+            //Check product availability
+            $getProductBal = $this->getProductQtyBalance($request['product'], $request['quantity']);
+            if($getProductBal['validationPass'] == false)
+            {
+                return redirect()->route('createProductGoingOut')->withInput($request->all())->with('error', 'Sorry, the quantity you want to move out is more than the available quantity. Available quantity is: '. $getProductBal['productAvailable']);
+            }
+           
             $getProductLeast = MeasurementUnitModel::where('measurementID', $request['measure'])->where('productID', $request['product'])->value('quantity');
             if(ProductMovement::find($recordID))
             {
@@ -108,10 +118,10 @@ class ProductMovementOutController extends Controller
                         'storeID'           => $request['store'],
                         'productID'         => $request['product'],
                         'measurementID'     => $request['measure'],
-                        'transactionDate'   => date('Y-m-d', strtotime($request['transactionDate'])),
                         'move_out'           => (is_numeric($request['quantity']) ? ($getProductLeast * $request['quantity']) : 1),
                         'quantity'          => $request['quantity'],
                         'projectID'         => $request['project'],
+                        'move_in_out_type'  => 2,
                     ]);
             }else{
                 $saved = ProductMovement::create(
@@ -120,21 +130,24 @@ class ProductMovementOutController extends Controller
                         'storeID'           => $request['store'],
                         'productID'         => $request['product'],
                         'measurementID'     => $request['measure'],
-                        'transactionDate'   => date('Y-m-d', strtotime($request['transactionDate'])),
                         'move_out'           => (is_numeric($request['quantity']) ? ($getProductLeast * $request['quantity']) : 1),
                         'quantity'          => $request['quantity'],
                         'projectID'         => $request['project'],
+                        'move_in_out_type'  => 2,
                     ]);
             }
+            $data['store']   = $request['store'];
+            $data['project'] = $request['project'];
             if($saved)
             {
                 Session::forget('editRecord');
-                return redirect()->route('createProductGoingOut')->with('message', 'New product was created/updated successfully.');
+                return redirect()->route('createProductGoingOut')->withInput($request->all)->with('message', 'New product was created/updated successfully.');
+                //return view('products.productMovement.itemEntryOut', $data, $this->indexData())->with('message', 'New product was created/updated successfully.');
             }
         }catch(\Throwable $getError){
             $this->storeTryCatchError($getError, 'ProductMovementOutController@storeProductMovement', 'Error occurred when adding/updating product.' );
         }
-        return redirect()->route('createProductGoingOut')->with('error', 'Sorry, we cannot create/update your record now. Please try again.');
+        return redirect()->route('createProductGoingOut')->withInput($request->all)->with('error', 'Sorry, we cannot create/update your record now. Please try again.');
     }//end fun
 
 
@@ -182,6 +195,8 @@ class ProductMovementOutController extends Controller
             {
                 return ProductMovement::where('product_movements.id', $recordID)
                     ->where('product_movements.status', 0)
+                    //->where('move_in_out_type', 2)
+                    //->where('product_movements.is_adjusted', 0)
                     ->leftjoin('products', 'products.id', '=', 'product_movements.productID')
                     ->leftjoin('measurements', 'measurements.id', '=', 'product_movements.measurementID')
                     ->leftjoin('stores', 'stores.id', '=', 'product_movements.storeID')
@@ -192,6 +207,9 @@ class ProductMovementOutController extends Controller
             }else{
                 return ProductMovement::leftjoin('products', 'products.id', '=', 'product_movements.productID')
                     ->where('product_movements.status', 0)
+                    ->where('move_in_out_type', 2)
+                    ->where('product_movements.is_adjusted', 0)
+                    ->where('product_movements.userID', (Auth::check() ? Auth::user()->id : null))
                     ->leftjoin('measurements', 'measurements.id', '=', 'product_movements.measurementID')
                     ->leftjoin('stores', 'stores.id', '=', 'product_movements.storeID')
                     ->leftjoin('projects', 'projects.id', '=', 'product_movements.projectID')
@@ -212,21 +230,23 @@ class ProductMovementOutController extends Controller
         $isSuccess = 0;
         $this->validate($request,
         [
+            'transactionDate'   => ['required', 'date'],
             'description'       => ['required', 'string'],
         ]);
         try{
             $randomDigit = rand(98979489, 8357373853);
-            $isSuccess = ProductMovement::where('status', 0)->update([
-                'status'        => 1,
-                'orderNo'       => $randomDigit,
-                'description'   => $request['description'],
+            $isSuccess = ProductMovement::where('status', 0)->where('move_in_out_type', 2)->where('is_adjusted', 0)->where('userID', (Auth::check() ? Auth::user()->id : null))->update([
+                'status'            => 1,
+                'orderNo'           => $randomDigit,
+                'transactionDate'   => date('Y-m-d', strtotime($request['transactionDate'])),
+                'description'       => $request['description'],
             ]);
         }catch(\Throwable $err){}
         if($isSuccess)
         {
-            return redirect()->back()->with('success', 'All unbatched items are now batched successfully as a single entry with the same order number: '. $randomDigit);
+            return redirect()->back()->with('success', 'All unbatched items were now batched successfully as a single entry with the same order number: '. $randomDigit);
         }else{
-            return redirect()->back()->with('warning', 'Sorry, we cannot batch you items now or no items to be batched. Please try again.');
+            return redirect()->back()->with('warning', 'Sorry, we cannot batch your items now or no items to be batched. Please try again.');
         }
     }
 

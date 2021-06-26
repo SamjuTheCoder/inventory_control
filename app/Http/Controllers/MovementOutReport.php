@@ -23,6 +23,8 @@ class MovementOutReport extends Controller
 
     public function launchReport() {
 
+        //dd('kk');
+
         $data['details']=null;
         
         $data['projectx'] = '';
@@ -40,10 +42,26 @@ class MovementOutReport extends Controller
         ->select('*','projects.id as pid','projects.location as plocation')
         ->get();
 
+        $data['details'] = ProductMovement::where('userID','=',Auth::user()->id)
+        ->where('move_out','>',0)
+        ->where('product_movements.status','=',1)
+        ->where('is_adjusted',0)
+        ->leftjoin('stores', 'product_movements.storeID', '=', 'stores.id')
+        ->leftjoin('products', 'product_movements.productID', '=', 'products.id')
+        ->select('*', DB::raw("SUM(move_out) as totalIn"), 'product_movements.productID as pid','products.productName')
+        ->groupBy('product_movements.productID')
+        ->get();
+
+        foreach($data['details'] as $xyz) {
+            $xyz->formatqty=$this->FormatQTY($xyz->productID,($xyz->totalIn) );
+        }
+
         return view('Report.movementout', $data);
     }
 
     public function getReport(Request $request) {
+
+       // dd($request->date_from);
 
         $data['projectx'] = $request->project;
         $data['productx'] = $request->product;
@@ -51,47 +69,97 @@ class MovementOutReport extends Controller
         $data['datefrom'] = $request->date_from;
         $data['dateto'] = $request->date_to;
 
+        Session::put('datefrom',$request->date_from);
+        Session::put('dateto',$request->date_to);
+
         $data['project'] = Project::all();
         $data['product'] = Product::all();
         $data['store'] = Store::all();
 
-        
-        $data['details'] = ProductMovement::where('userID','=',Auth::user()->id)
-	    ->where('storeID',($request->store?'=':'<>'),$request->store)
-	    ->where('projectID',($request->project?'=':'<>'),$request->project)
-        ->where('productID',($request->product?'=':'<>'),$request->product)
-        ->where('move_out','>',0)
-	    ->orwhereBetween('transactionDate',[$request->date_from,$request->date_to])
-	    ->leftjoin('stores', 'product_movements.storeID', '=', 'stores.id')
-	    ->leftjoin('projects', 'product_movements.projectID', '=', 'projects.id')
-	    ->leftjoin('products', 'product_movements.productID', '=', 'products.id')
-        ->select('*','product_movements.productID as pid','products.productName')
-        ->groupBy('product_movements.productID')
-	    ->get();
+        if($request->date_from==null) {
+            
+            $data['details'] = ProductMovement::where('userID','=',Auth::user()->id)
+            ->where('storeID',($request->store?'=':'<>'),$request->store)
+            ->where('projectID',($request->project?'=':'<>'),$request->project)
+            ->where('productID',($request->product?'=':'<>'),$request->product)
+            ->where('move_out','>',0)
+            ->where('product_movements.status','=',1)
+            ->where('is_adjusted',0)
+            ->leftjoin('stores', 'product_movements.storeID', '=', 'stores.id')
+            ->leftjoin('projects', 'product_movements.projectID', '=', 'projects.id')
+            ->leftjoin('products', 'product_movements.productID', '=', 'products.id')
+            ->select('*', DB::raw("SUM(move_in) as totalIn"),DB::raw("SUM(move_out) as sum"), 'product_movements.productID as pid','products.productName')
+            ->groupBy('product_movements.productID')
+            ->get();
+            
 
-        $data['sum'] = ProductMovement::where('userID','=',Auth::user()->id)
-	    ->where('storeID',($request->store?'=':'<>'),$request->store)
-	    ->where('projectID',($request->project?'=':'<>'),$request->project)
-        ->where('productID',($request->product?'=':'<>'),$request->product)
-        ->where('move_out','>',0)
-	    ->orwhereBetween('transactionDate',[$request->date_from,$request->date_to])
-	    ->sum('product_movements.move_out');
-       
+        }
+        else {
+
+            $data['details'] = ProductMovement::where('userID','=',Auth::user()->id)
+            ->where('storeID',($request->store?'=':'<>'),$request->store)
+            ->where('projectID',($request->project?'=':'<>'),$request->project)
+            ->where('productID',($request->product?'=':'<>'),$request->product)
+            ->where('move_out','>',0)
+            ->where('product_movements.status','=',1)
+            ->where('is_adjusted',0)
+            ->whereBetween('transactionDate',[date('Y-m-d', strtotime($request->date_from)), date('Y-m-d', strtotime($request->date_to))])
+            ->leftjoin('stores', 'product_movements.storeID', '=', 'stores.id')
+            ->leftjoin('projects', 'product_movements.projectID', '=', 'projects.id')
+            ->leftjoin('products', 'product_movements.productID', '=', 'products.id')
+            ->select('*', DB::raw("SUM(move_in) as totalIn"),DB::raw("SUM(move_out) as sum"), 'product_movements.productID as pid','products.productName')
+            ->groupBy('product_movements.productID')
+            ->get();
+
+        }
+
+        foreach($data['details'] as $xyz) {
+            $xyz->formatqty=$this->FormatQTY($xyz->productID,($xyz->sum) );
+        }
+
         return view('Report.movementout', $data);
         
     }
 
     public function viewAll($id)
     {
+        //dd(base64_decode(Session::get('datefrom')));
+        $datefrom = Session::get('datefrom');
+        $dateto = Session::get('dateto');
+
         $data['id'] = base64_decode($id);
 
-        $data['details'] = ProductMovement::where('userID','=',Auth::user()->id)
-        ->where('productID',$data['id'])
-        ->where('move_out','>',0)
-	    ->leftjoin('stores', 'product_movements.storeID', '=', 'stores.id')
-	    ->leftjoin('projects', 'product_movements.projectID', '=', 'projects.id')
-	    ->leftjoin('products', 'product_movements.productID', '=', 'products.id')
-	    ->get();
+        if($datefrom==null) {
+            
+            $data['details'] = ProductMovement::where('userID','=',Auth::user()->id)
+            ->where('productID',$data['id'])
+            ->where('move_out','>',0)
+            ->where('product_movements.status','=',1)
+            ->where('is_adjusted',0)
+            //->whereBetween('transactionDate',[date('Y-m-d', strtotime($datefrom)), date('Y-m-d', strtotime($dateto))])
+            ->leftjoin('stores', 'product_movements.storeID', '=', 'stores.id')
+            ->leftjoin('projects', 'product_movements.projectID', '=', 'projects.id')
+            ->leftjoin('products', 'product_movements.productID', '=', 'products.id')
+            ->get();
+        }
+        else {
+
+            $data['details'] = ProductMovement::where('userID','=',Auth::user()->id)
+            ->where('productID',$data['id'])
+            ->where('move_out','>',0)
+            ->where('product_movements.status','=',1)
+            ->where('is_adjusted',0)
+            ->whereBetween('transactionDate',[date('Y-m-d', strtotime($datefrom)), date('Y-m-d', strtotime($dateto))])
+            ->leftjoin('stores', 'product_movements.storeID', '=', 'stores.id')
+            ->leftjoin('projects', 'product_movements.projectID', '=', 'projects.id')
+            ->leftjoin('products', 'product_movements.productID', '=', 'products.id')
+            ->get();
+
+        }
+
+        foreach($data['details'] as $xyz) {
+           $xyz->formatqty=$this->FormatQTY($xyz->productID,($xyz->move_out) );
+        }
 
         return view('Report.viewall', $data);
     }

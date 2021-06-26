@@ -51,26 +51,32 @@ Movement-Out Report
                               <th scope="col">Order No</th>
                               <th scope="col">Quantity</th>
                               <th scope="col">Date</th>
-                              <!-- <th scope="col">Action</th> -->
+                              <th scope="col">Action</th>
                           </tr>
                       </thead>
                       @if($details==null)
 
                       @else
                         <tbody>
-                        @php $i=1; @endphp
-                        @foreach($details as $detail)
+                        @php 
+                        $i=1; 
+                        $sum=0;
                         
+                        @endphp
+                        @foreach($details as $detail)
+                            @php  $sum += $detail->move_out;  @endphp
                             <tr>
                                 <th scope="row">{{ $i++ }}</th>
                                 <td>{{ $detail->productName }}</td>
                                 <td>{{ $detail->description }}</td>
                                 <td>{{ $detail->orderNo }}</td>
-                                <td>{{ $detail->move_out }}</td>
+                                <td>{{ $detail->move_out }} [ <span style="color:green">{{ $detail->formatqty }} </span> ] </td>
                                 <td>{{ date('d-m-Y', strtotime($detail->transactionDate))  }}</td>
-                                <!-- <td> <a href="edit-project" data-toggle="tooltip" data-placement="bootom" title="Edit record"><button class="btn btn-outline-success"><i class="fa fa-edit"></i></button></a> </td> -->
+                                <td> <a href="{{url('order-items')}}/{{$detail->orderNo}}" target="_blank" data-toggle="tooltip" data-placement="bootom" title="View record"><button class="btn btn-outline-success"><i class="fa fa-eye"></i></button></a> </td>
                             </tr>
                         @endforeach
+
+                             
                         </tbody>
                     @endif
                   </table>
